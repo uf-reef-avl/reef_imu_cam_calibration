@@ -30,8 +30,6 @@ namespace calibration{
 
         bool initialize;
 
-        Eigen::Quaterniond world_to_imu;
-        Eigen::Vector3d position_to_imu;
 
         
 
@@ -40,7 +38,7 @@ namespace calibration{
         CameraIMUEKF();
         ~CameraIMUEKF();
 
-        void nonLinearPropogation(Eigen::Vector3d omega, Eigen::Vector3d acceleration);
+        void nonLinearPropagation(Eigen::Vector3d omega, Eigen::Vector3d acceleration);
         void nonLinearUpdate();
 
         void sensorUpdate(sensor_msgs::Imu imu);

@@ -10,6 +10,8 @@
 #include <sensor_msgs/Imu.h>
 #include <geometry_msgs/Pose.h>
 
+#include "camera_imu_ekf.h"
+
 namespace calibration{
     class SensorManager{
     private:
@@ -29,10 +31,14 @@ namespace calibration{
         std::string mocap_twist_name;
         std::string aruco_topic_name;
 
+    public:
+
         sensor_msgs::Imu imu_msg;
         geometry_msgs::Pose mocap_board;
         geometry_msgs::Pose mocap_imu;
         geometry_msgs::Pose aruco_msg;
+
+        CameraIMUEKF calib_obj;
 
         void imuCallback(const sensor_msgs::Imu);
 
