@@ -16,12 +16,13 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   sensor_msgs
         tf2_eigen
+        ar_sys
 )
 
 catkin_package(
         INCLUDE_DIRS
         LIBRARIES
-        CATKIN_DEPENDS roscpp rospy sensor_msgs geometry_msgs rosflight_msgs sensor_msgs tf2_eigen
+        CATKIN_DEPENDS roscpp rospy ar_sys sensor_msgs geometry_msgs rosflight_msgs sensor_msgs tf2_eigen
 )
 
 include_directories(include ${catkin_INCLUDE_DIRS})

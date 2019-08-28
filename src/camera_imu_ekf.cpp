@@ -12,6 +12,7 @@ namespace calibration{
     initialize(false)
     {
         nh_private.param<double>("estimator_dt", dt, 0.002);
+        nh_private.param<int>("number_of_features", number_of_features, 16);
 
         F = Eigen::MatrixXd(21,21);
         F.setZero();
@@ -28,20 +29,20 @@ namespace calibration{
         P = Eigen::MatrixXd(21,21);
         P.setZero();
 
-        K = Eigen::MatrixXd(21,32);
+        K = Eigen::MatrixXd(21,2*number_of_features);
         K.setZero();
 
-        z = Eigen::MatrixXd(32,1);
+        z = Eigen::MatrixXd(2*number_of_features,1);
 
-        H = Eigen::MatrixXd(32,21);
+        H = Eigen::MatrixXd(2*number_of_features,21);
 
         xHat0 = Eigen::MatrixXd(23,1);
         xHat = Eigen::MatrixXd(23,1);
         Q = Eigen::MatrixXd(12,12);
 
-        betaVector = Eigen::MatrixXd(21,1);
+        betaVector = Eigen::MatrixXd(23,1);
 
-        R = Eigen::MatrixXd(32,32);
+        R = Eigen::MatrixXd(number_of_features,number_of_features);
 
         I = Eigen::MatrixXd(3,3);
         I.setIdentity();
@@ -49,14 +50,15 @@ namespace calibration{
         reef_msgs::importMatrixFromParamServer(nh_private, xHat0, "xHat0");
         reef_msgs::importMatrixFromParamServer(nh_private, P0, "P0");
         reef_msgs::importMatrixFromParamServer(nh_private, Q, "Q");
-//        reef_msgs::importMatrixFromParamServer(nh_private, R, "R");
-//        reef_msgs::importMatrixFromParamServer(nh_private, betaVector, "beta");
+        reef_msgs::importMatrixFromParamServer(nh_private, R, "R");
+        reef_msgs::importMatrixFromParamServer(nh_private, betaVector, "beta");
 
         ROS_WARN_STREAM("XHat0 is \n" << xHat0);
         ROS_WARN_STREAM("P0 is \n" << P0);
         ROS_WARN_STREAM("Q is \n" << Q);
+        ROS_WARN_STREAM("R is \n" << R);
+        ROS_WARN_STREAM("Beta is \n" << betaVector);
 
-        dt = 0.01; //initial dt
         Q = Q * dt;
 
         Estimator::initialize();
@@ -88,6 +90,84 @@ namespace calibration{
 
         // TODO: Calibrate the IMU and subtract gravity vector from it.
         nonLinearPropagation(omega_imu, accelxyz_in_body_frame);
+
+    }
+
+    void CameraIMUEKF::sensorUpdate(ar_sys::ArucoCornerMsg aruco_corners) {
+
+        if(aruco_corners.pixel_corners.size() != number_of_features/4)
+            return;
+
+        Eigen::MatrixXd expected_measurement(2 * number_of_features, 1);
+        expected_measurement.setZero();
+        z.setZero();
+        H.setZero();
+
+        fx = fy = 600;
+        cx = 320;
+        cy = 240;
+
+        for(unsigned int i =0; i < aruco_corners.metric_corners.size(); i++){
+            aruco_helper(aruco_corners.metric_corners[i].top_left, aruco_corners.pixel_corners[i].top_left, expected_measurement, i, TOP_LEFT);
+            aruco_helper(aruco_corners.metric_corners[i].top_right, aruco_corners.pixel_corners[i].top_right, expected_measurement, i, TOP_RIGHT);
+            aruco_helper(aruco_corners.metric_corners[i].bottom_right, aruco_corners.pixel_corners[i].bottom_right, expected_measurement, i, BOTTOM_RIGHT);
+            aruco_helper(aruco_corners.metric_corners[i].bottom_left, aruco_corners.pixel_corners[i].bottom_left, expected_measurement, i, BOTTOM_LEFT);
+        }
+        nonLinearUpdate(expected_measurement);
+
+    }
+
+    void CameraIMUEKF::aruco_helper(ar_sys::SingleCorner metric_corner, ar_sys::SingleCorner pixel_corner,
+                                    Eigen::MatrixXd &y_exp, unsigned int index, unsigned int position) {
+
+        Eigen::Quaterniond world_to_imu_quat;
+        world_to_imu_quat.vec() << xHat(0), xHat(1), xHat(2);
+        world_to_imu_quat.w() = xHat(3);
+
+        Eigen::Vector3d world_to_imu_position(xHat(4), xHat(5), xHat(6));
+        Eigen::Vector3d velocity_W(xHat(7), xHat(8), xHat(9));
+        Eigen::Vector3d accel_bias(xHat(10), xHat(11) , xHat(12));
+        Eigen::Vector3d gyro_bias(xHat(13), xHat(14) , xHat(15));
+        Eigen::Vector3d camera_to_imu_position(xHat(16), xHat(17), xHat(18));
+
+        Eigen::Quaterniond camera_to_imu_quad;
+        camera_to_imu_quad.vec() << xHat(19), xHat(20), xHat(21);
+        camera_to_imu_quad.w() = xHat(22);
+
+        Eigen::Matrix3d q_block;
+        Eigen::Matrix3d pos_block;
+        Eigen::Matrix3d zero_block;
+        Eigen::Matrix3d p_c_i_block;
+        Eigen::Matrix3d alpha_block;
+
+        pos_block = -1 * camera_to_imu_quad.toRotationMatrix().transpose() * world_to_imu_quat.toRotationMatrix().transpose();
+        zero_block.setZero();
+        p_c_i_block = -1 * camera_to_imu_quad.toRotationMatrix().transpose();
+
+        Eigen::MatrixXd partial_y_measure_p_fc(2,3);
+        Eigen::MatrixXd partial_x_measure(3,21);
+
+        Eigen::Vector3d measured_metric(metric_corner.x, metric_corner.y, metric_corner.z);
+        Eigen::Vector3d feature_metric_position_camera_frame;
+        feature_metric_position_camera_frame = camera_to_imu_quad.toRotationMatrix().transpose() * ( world_to_imu_quat.toRotationMatrix().transpose() * (measured_metric -  world_to_imu_position) - camera_to_imu_position);
+
+        Eigen::Vector2d feature_pixel_position_camera_frame;
+
+        feature_pixel_position_camera_frame << fx * (feature_metric_position_camera_frame(0)/feature_metric_position_camera_frame(2)) + cx,
+                                                fy * (feature_metric_position_camera_frame(1)/feature_metric_position_camera_frame(2)) + cy;
+        y_exp.block<2,1>(8*index + position, 0) = feature_pixel_position_camera_frame;
+        z.block<2,1>(8*index + position, 0) << pixel_corner.x, pixel_corner.y;
+
+        q_block = camera_to_imu_quad.toRotationMatrix().transpose() * reef_msgs::skew( world_to_imu_quat.toRotationMatrix().transpose() * (measured_metric - world_to_imu_position) );
+        alpha_block = reef_msgs::skew( camera_to_imu_quad.toRotationMatrix().transpose() * ( world_to_imu_quat.toRotationMatrix().transpose() * (measured_metric - world_to_imu_position) - camera_to_imu_position) );
+
+        partial_y_measure_p_fc << fx, 0, -fx * feature_metric_position_camera_frame(0)/feature_metric_position_camera_frame(2),
+                0,fy, -fy * feature_metric_position_camera_frame(1)/feature_metric_position_camera_frame(2);
+        partial_y_measure_p_fc = (1/feature_metric_position_camera_frame(2)) * partial_y_measure_p_fc;
+        partial_x_measure << q_block, pos_block, zero_block, zero_block, zero_block, p_c_i_block, alpha_block;
+        H.block<2,21>(8*index + position,0)  = partial_y_measure_p_fc * partial_x_measure;
+
+
 
     }
 
@@ -140,40 +220,46 @@ namespace calibration{
         xHat.block<4,1>(0,0) =  world_to_imu_quat.coeffs();
 
         P = P + (F * P + P * F.transpose() + G * Q * G.transpose()) * dt;
+    }
 
+    void CameraIMUEKF::nonLinearUpdate(Eigen::MatrixXd y_exp) {
 
+        // Break state into variables to make it easier to read (and write) code
+        Eigen::Quaterniond world_to_imu_quat;
+        world_to_imu_quat.vec() << xHat(0), xHat(1), xHat(2);
+        world_to_imu_quat.w() = xHat(3);
 
+        Eigen::Vector3d world_to_imu_position(xHat(4), xHat(5), xHat(6));
+        Eigen::Vector3d velocity_W(xHat(7), xHat(8), xHat(9));
+        Eigen::Vector3d accel_bias(xHat(10), xHat(11) , xHat(12));
+        Eigen::Vector3d gyro_bias(xHat(13), xHat(14) , xHat(15));
+        Eigen::Vector3d camera_to_imu_position(xHat(16), xHat(17), xHat(18));
 
+        Eigen::Quaterniond camera_to_imu_quad;
+        camera_to_imu_quad.vec() << xHat(19), xHat(20), xHat(21);
+        camera_to_imu_quad.w() = xHat(22);
 
+        K = P * H.transpose() * (H * P * H.transpose() + R).inverse();
+        Eigen::MatrixXd correction(21,1);
+        correction = K * (z- y_exp);
 
+        Eigen::Quaterniond quat_error;
+        quat_error.vec() = 0.5 * correction.block<1,3>(0,0);
+        quat_error.w() = 1;
+        world_to_imu_quat = quat_error * world_to_imu_quat;
+        world_to_imu_quat.normalize();
+        xHat.block<4,1>(0,0) =  world_to_imu_quat.coeffs();
 
+        quat_error.vec() = 0.5 * correction.block<1,3>(18,0);
+        quat_error.w() = 1;
+        camera_to_imu_quad = quat_error * camera_to_imu_quad;
+        camera_to_imu_quad.normalize();
+        xHat.block<4,1>(19,0) =  camera_to_imu_quad.coeffs();
 
+        xHat.block<15,1>(4,0) = xHat.block<15,1>(4,0) + correction.block<15,1>(3,0);
 
-//        Eigen::Quaterniond q_Ik_I;
-//        Eigen::Quaterniond current_frame;
-//        Eigen::MatrixXd quaternion_integration(4,4);
-//
-//        current_frame.w() = 1;
-//        current_frame.vec() << 0, 0, 0;
-//
-//        quaternion_integration.topLeftCorner<3,3>() = -1 * reef_msgs::skew(omega);
-//        quaternion_integration.block<3,1>(0,3) = omega;
-//        quaternion_integration.block<1,3>(3,0) = -1 * omega;
-//
-//        q_Ik_I = 0.5 * dt * quaternion_integration * current_frame;
-//        q_Ik_I.normalize();
-//
-//        world_to_imu = q_Ik_I * world_to_imu;
-//        world_to_imu.normalize();
-//
-//
-//        xHat(0) = q_Ik_I.vec()(0);
-//        xHat(1) = q_Ik_I.vec()(1);
-//        xHat(2) = q_Ik_I.vec()(2);
-//
-//        xHat.block<3,1>(6,0) = xHat.block<3,1>(6,0) + dt * world_to_imu.toRotationMatrix() * acceleration;
-//
-//        xHat.block<3,1>(3,0) = xHat.block<3,1>(3,0) + xHat.block<3,1>(6,0) * dt;
+        P = ( Eigen::MatrixXd::Identity(21,21) - K * H ) * P;
+
     }
 
 }

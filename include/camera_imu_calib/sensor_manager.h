@@ -9,6 +9,7 @@
 #include <std_msgs/Bool.h>
 #include <sensor_msgs/Imu.h>
 #include <geometry_msgs/Pose.h>
+#include <ar_sys/ArucoCornerMsg.h>
 
 #include "camera_imu_ekf.h"
 
@@ -23,7 +24,8 @@ namespace calibration{
         ros::Subscriber mocap_board_subscriber_;
         ros::Subscriber mocap_imu_subscriber_;
         ros::Subscriber mocap_twist_subscriber_;
-        ros::Subscriber aruco_subscriber_;
+        ros::Subscriber corner_subscriber;
+        ros::Subscriber camera_info_subscriber;
 
         std::string imu_topic_name;
         std::string mocap_board_name;
@@ -31,16 +33,24 @@ namespace calibration{
         std::string mocap_twist_name;
         std::string aruco_topic_name;
 
+
+        void imuCallback(const sensor_msgs::ImuConstPtr &msg);
+        void cornerCallback(const ar_sys::ArucoCornerMsg &msg);
+
+        CameraIMUEKF calib_obj;
+
     public:
+
+        SensorManager();
+        ~SensorManager(){}
 
         sensor_msgs::Imu imu_msg;
         geometry_msgs::Pose mocap_board;
         geometry_msgs::Pose mocap_imu;
         geometry_msgs::Pose aruco_msg;
+        ar_sys::ArucoCornerMsg corner_msg;
 
-        CameraIMUEKF calib_obj;
 
-        void imuCallback(const sensor_msgs::Imu);
 
 
 

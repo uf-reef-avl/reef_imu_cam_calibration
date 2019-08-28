@@ -15,8 +15,17 @@
 #include <geometry_msgs/TwistStamped.h>
 #include <sensor_msgs/Imu.h>
 #include <reef_msgs/XYZDebugEstimate.h>
+#include <ar_sys/ArucoCornerMsg.h>
+#include <ar_sys/SingleCorner.h>
+
 
 #include "camera_imu_calib/estimator.h"
+
+#define TOP_LEFT 0
+#define TOP_RIGHT 2
+#define BOTTOM_LEFT 4
+#define BOTTOM_RIGHT 6
+
 
 namespace calibration{
     class CameraIMUEKF : public reef_estimator::Estimator{
@@ -27,9 +36,11 @@ namespace calibration{
         ros::Publisher state_publisher_;
 
         double last_time_stamp;
-
         bool initialize;
 
+        void nonLinearPropagation(Eigen::Vector3d omega, Eigen::Vector3d acceleration);
+        void nonLinearUpdate(Eigen::MatrixXd y_exp);
+        void aruco_helper(ar_sys::SingleCorner metric_corner, ar_sys::SingleCorner pixel_corner, Eigen::MatrixXd& y_exp, unsigned int index, unsigned int position);
 
         
 
@@ -38,10 +49,14 @@ namespace calibration{
         CameraIMUEKF();
         ~CameraIMUEKF();
 
-        void nonLinearPropagation(Eigen::Vector3d omega, Eigen::Vector3d acceleration);
-        void nonLinearUpdate();
+        int fx;
+        int fy;
+        int cx;
+        int cy;
+
 
         void sensorUpdate(sensor_msgs::Imu imu);
+        void sensorUpdate(ar_sys::ArucoCornerMsg aruco_corners);
 
 
 
