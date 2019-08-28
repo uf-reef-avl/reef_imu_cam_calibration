@@ -9,7 +9,8 @@ namespace calibration{
     CameraIMUEKF::CameraIMUEKF() :
     nh_private("~"),
     nh_(""),
-    initialize(false)
+    initialize(false),
+    got_measurement(false)
     {
         nh_private.param<double>("estimator_dt", dt, 0.002);
         nh_private.param<int>("number_of_features", number_of_features, 16);
@@ -33,6 +34,10 @@ namespace calibration{
         K.setZero();
 
         z = Eigen::MatrixXd(2*number_of_features,1);
+        z.setZero();
+
+        expected_measurement = Eigen::MatrixXd(2 * number_of_features, 1);
+        expected_measurement.setZero();
 
         H = Eigen::MatrixXd(2*number_of_features,21);
 
@@ -42,7 +47,7 @@ namespace calibration{
 
         betaVector = Eigen::MatrixXd(23,1);
 
-        R = Eigen::MatrixXd(number_of_features,number_of_features);
+        R = Eigen::MatrixXd(2 * number_of_features, 2 * number_of_features);
 
         I = Eigen::MatrixXd(3,3);
         I.setIdentity();
@@ -91,6 +96,11 @@ namespace calibration{
         // TODO: Calibrate the IMU and subtract gravity vector from it.
         nonLinearPropagation(omega_imu, accelxyz_in_body_frame);
 
+        if(got_measurement){
+            nonLinearUpdate();
+            got_measurement = false;
+        }
+
     }
 
     void CameraIMUEKF::sensorUpdate(ar_sys::ArucoCornerMsg aruco_corners) {
@@ -98,27 +108,26 @@ namespace calibration{
         if(aruco_corners.pixel_corners.size() != number_of_features/4)
             return;
 
-        Eigen::MatrixXd expected_measurement(2 * number_of_features, 1);
-        expected_measurement.setZero();
         z.setZero();
         H.setZero();
+        expected_measurement.setZero();
 
         fx = fy = 600;
         cx = 320;
         cy = 240;
 
         for(unsigned int i =0; i < aruco_corners.metric_corners.size(); i++){
-            aruco_helper(aruco_corners.metric_corners[i].top_left, aruco_corners.pixel_corners[i].top_left, expected_measurement, i, TOP_LEFT);
-            aruco_helper(aruco_corners.metric_corners[i].top_right, aruco_corners.pixel_corners[i].top_right, expected_measurement, i, TOP_RIGHT);
-            aruco_helper(aruco_corners.metric_corners[i].bottom_right, aruco_corners.pixel_corners[i].bottom_right, expected_measurement, i, BOTTOM_RIGHT);
-            aruco_helper(aruco_corners.metric_corners[i].bottom_left, aruco_corners.pixel_corners[i].bottom_left, expected_measurement, i, BOTTOM_LEFT);
+            aruco_helper(aruco_corners.metric_corners[i].top_left, aruco_corners.pixel_corners[i].top_left, i, TOP_LEFT);
+            aruco_helper(aruco_corners.metric_corners[i].top_right, aruco_corners.pixel_corners[i].top_right, i, TOP_RIGHT);
+            aruco_helper(aruco_corners.metric_corners[i].bottom_right, aruco_corners.pixel_corners[i].bottom_right, i, BOTTOM_RIGHT);
+            aruco_helper(aruco_corners.metric_corners[i].bottom_left, aruco_corners.pixel_corners[i].bottom_left, i, BOTTOM_LEFT);
         }
-        nonLinearUpdate(expected_measurement);
+        got_measurement = true;
 
     }
 
     void CameraIMUEKF::aruco_helper(ar_sys::SingleCorner metric_corner, ar_sys::SingleCorner pixel_corner,
-                                    Eigen::MatrixXd &y_exp, unsigned int index, unsigned int position) {
+                                     unsigned int index, unsigned int position) {
 
         Eigen::Quaterniond world_to_imu_quat;
         world_to_imu_quat.vec() << xHat(0), xHat(1), xHat(2);
@@ -155,7 +164,8 @@ namespace calibration{
 
         feature_pixel_position_camera_frame << fx * (feature_metric_position_camera_frame(0)/feature_metric_position_camera_frame(2)) + cx,
                                                 fy * (feature_metric_position_camera_frame(1)/feature_metric_position_camera_frame(2)) + cy;
-        y_exp.block<2,1>(8*index + position, 0) = feature_pixel_position_camera_frame;
+
+        expected_measurement.block<2,1>(8*index + position, 0) = feature_pixel_position_camera_frame;
         z.block<2,1>(8*index + position, 0) << pixel_corner.x, pixel_corner.y;
 
         q_block = camera_to_imu_quad.toRotationMatrix().transpose() * reef_msgs::skew( world_to_imu_quat.toRotationMatrix().transpose() * (measured_metric - world_to_imu_position) );
@@ -166,9 +176,6 @@ namespace calibration{
         partial_y_measure_p_fc = (1/feature_metric_position_camera_frame(2)) * partial_y_measure_p_fc;
         partial_x_measure << q_block, pos_block, zero_block, zero_block, zero_block, p_c_i_block, alpha_block;
         H.block<2,21>(8*index + position,0)  = partial_y_measure_p_fc * partial_x_measure;
-
-
-
     }
 
     void CameraIMUEKF::nonLinearPropagation(Eigen::Vector3d omega, Eigen::Vector3d acceleration) {
@@ -222,7 +229,7 @@ namespace calibration{
         P = P + (F * P + P * F.transpose() + G * Q * G.transpose()) * dt;
     }
 
-    void CameraIMUEKF::nonLinearUpdate(Eigen::MatrixXd y_exp) {
+    void CameraIMUEKF::nonLinearUpdate() {
 
         // Break state into variables to make it easier to read (and write) code
         Eigen::Quaterniond world_to_imu_quat;
@@ -241,18 +248,18 @@ namespace calibration{
 
         K = P * H.transpose() * (H * P * H.transpose() + R).inverse();
         Eigen::MatrixXd correction(21,1);
-        correction = K * (z- y_exp);
+        correction = K * (z- expected_measurement);
 
         Eigen::Quaterniond quat_error;
-        quat_error.vec() = 0.5 * correction.block<1,3>(0,0);
+        quat_error.vec() = 0.5 * correction.block<3,1>(0,0);
         quat_error.w() = 1;
-        world_to_imu_quat = quat_error * world_to_imu_quat;
+        world_to_imu_quat = world_to_imu_quat * quat_error;
         world_to_imu_quat.normalize();
         xHat.block<4,1>(0,0) =  world_to_imu_quat.coeffs();
 
-        quat_error.vec() = 0.5 * correction.block<1,3>(18,0);
+        quat_error.vec() = 0.5 * correction.block<3,1>(18,0);
         quat_error.w() = 1;
-        camera_to_imu_quad = quat_error * camera_to_imu_quad;
+        camera_to_imu_quad = camera_to_imu_quad * quat_error;
         camera_to_imu_quad.normalize();
         xHat.block<4,1>(19,0) =  camera_to_imu_quad.coeffs();
 

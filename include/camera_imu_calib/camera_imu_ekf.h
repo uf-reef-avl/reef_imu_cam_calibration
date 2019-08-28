@@ -37,12 +37,13 @@ namespace calibration{
 
         double last_time_stamp;
         bool initialize;
+        bool got_measurement;
 
         void nonLinearPropagation(Eigen::Vector3d omega, Eigen::Vector3d acceleration);
-        void nonLinearUpdate(Eigen::MatrixXd y_exp);
-        void aruco_helper(ar_sys::SingleCorner metric_corner, ar_sys::SingleCorner pixel_corner, Eigen::MatrixXd& y_exp, unsigned int index, unsigned int position);
+        void nonLinearUpdate();
+        void aruco_helper(ar_sys::SingleCorner metric_corner, ar_sys::SingleCorner pixel_corner, unsigned int index, unsigned int position);
 
-        
+        Eigen::MatrixXd expected_measurement;
 
 
     public:

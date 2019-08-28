@@ -9,7 +9,6 @@ namespace reef_estimator
     {
         xHat = xHat0;
         P = P0;
-        R = R0;
 
         //Calculate partial update alphas
         int numStates = betaVector.rows();

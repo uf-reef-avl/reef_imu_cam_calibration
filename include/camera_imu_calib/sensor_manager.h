@@ -20,6 +20,8 @@ namespace calibration{
         ros::NodeHandle private_nh_;
         ros::NodeHandle nh_;
 
+        //TODO Add camera info subscriber
+
         ros::Subscriber imu_subscriber_;
         ros::Subscriber mocap_board_subscriber_;
         ros::Subscriber mocap_imu_subscriber_;
