@@ -74,6 +74,11 @@ namespace calibration{
         //TODO Make new message or change the message type.
         state_publisher_ = nh_.advertise<reef_msgs::XYZDebugEstimate>("xyz_estimate", 1, true);
 
+        pnp_average_translation.setZero();
+        pnp_average_euler.setZero();
+//        pnp_quaternion_stack = Eigen::MatrixXd(4,CORNER_SAMPLE_SIZE);
+//        pnp_quaternion_stack.setZero();
+
     }
 
     CameraIMUEKF::~CameraIMUEKF() {}
@@ -161,15 +166,35 @@ namespace calibration{
                 rotMat.at<double>(1, 0), rotMat.at<double>(1, 1), rotMat.at<double>(1, 2),
                 rotMat.at<double>(2, 0), rotMat.at<double>(2, 1), rotMat.at<double>(2, 2);
 
-        Eigen::Quaterniond pnp_rotation(rot_mat);
-        Eigen::Vector3d pnp_translation(tvec[0], tvec[1], tvec[2]);
+
+//        Eigen::Quaterniond pnp_rotation(rot_mat);
+//
+//        pnp_quaternion_stack.block<4,1>(0,cornerSampleCount);
+
+        Eigen::Vector3d rpy;
+
+        reef_msgs::roll_pitch_yaw_from_rotation321(rot_mat, rpy);
+
+        pnp_average_euler +=rpy;
 
 
         cornerSampleCount++;
 
+        pnp_average_translation.x() += tvec[0];
+        pnp_average_translation.y() += tvec[1];
+        pnp_average_translation.z() += tvec[2];
+
         if(cornerSampleCount == CORNER_SAMPLE_SIZE)
         {
             initialized_pnp = true;
+            pnp_average_euler.x() = pnp_average_euler.x()/CORNER_SAMPLE_SIZE;
+            pnp_average_euler.y() = pnp_average_euler.y()/CORNER_SAMPLE_SIZE;
+            pnp_average_euler.z() = pnp_average_euler.z()/CORNER_SAMPLE_SIZE;
+
+            pnp_average_translation.x() = pnp_average_translation.x()/CORNER_SAMPLE_SIZE;
+            pnp_average_translation.y() = pnp_average_translation.y()/CORNER_SAMPLE_SIZE;
+            pnp_average_translation.z() = pnp_average_translation.z()/CORNER_SAMPLE_SIZE;
+
         }
 
 
@@ -257,7 +282,6 @@ namespace calibration{
             initializePNP(aruco_corners);
             return;
         }
-
         z.setZero();
         H.setZero();
         expected_measurement.setZero();

@@ -58,7 +58,7 @@ namespace calibration{
         Eigen::MatrixXd expected_measurement;
 
         Eigen::Vector3d pnp_average_translation;
-        Eigen::MatrixXd pnp_quaternion_stack;
+        Eigen::Vector3d pnp_average_euler;
 
         void nonLinearPropagation(Eigen::Vector3d omega, Eigen::Vector3d acceleration);
         void nonLinearUpdate();
