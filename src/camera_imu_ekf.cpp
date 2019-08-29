@@ -186,7 +186,6 @@ namespace calibration{
 
         if(cornerSampleCount == CORNER_SAMPLE_SIZE)
         {
-            initialized_pnp = true;
             pnp_average_euler.x() = pnp_average_euler.x()/CORNER_SAMPLE_SIZE;
             pnp_average_euler.y() = pnp_average_euler.y()/CORNER_SAMPLE_SIZE;
             pnp_average_euler.z() = pnp_average_euler.z()/CORNER_SAMPLE_SIZE;
@@ -194,10 +193,10 @@ namespace calibration{
             pnp_average_translation.x() = pnp_average_translation.x()/CORNER_SAMPLE_SIZE;
             pnp_average_translation.y() = pnp_average_translation.y()/CORNER_SAMPLE_SIZE;
             pnp_average_translation.z() = pnp_average_translation.z()/CORNER_SAMPLE_SIZE;
+            initialized_pnp = true;
 
+            // TODO Initialize the XHAT Vector!
         }
-
-
     }
 
     void CameraIMUEKF::getCameraInfo(const sensor_msgs::CameraInfo &msg){
@@ -255,15 +254,21 @@ namespace calibration{
             return;
         }
 
+        if(!initialized_pnp)
+            return;
+
         dt = imu.header.stamp.toSec() - last_time_stamp;
         last_time_stamp = imu.header.stamp.toSec();
+
+        imu.linear_acceleration.x = imu.linear_acceleration.x - accSampleAverage.x;
+        imu.linear_acceleration.y = imu.linear_acceleration.y - accSampleAverage.z;
+        imu.linear_acceleration.z = imu.linear_acceleration.y - accSampleAverage.z;
 
         Eigen::Vector3d omega_imu;
         Eigen::Vector3d accelxyz_in_body_frame;
         omega_imu << imu.angular_velocity.x , imu.angular_velocity.y, imu.angular_velocity.z;
         accelxyz_in_body_frame << imu.linear_acceleration.x, imu.linear_acceleration.y, imu.linear_acceleration.z; //This is a column vector.
 
-        // TODO: Calibrate the IMU and subtract gravity vector from it.
         nonLinearPropagation(omega_imu, accelxyz_in_body_frame);
 
         if(got_measurement){
