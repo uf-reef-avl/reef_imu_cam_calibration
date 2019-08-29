@@ -14,9 +14,14 @@
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/TwistStamped.h>
 #include <sensor_msgs/Imu.h>
+#include <sensor_msgs/CameraInfo.h>
 #include <reef_msgs/XYZDebugEstimate.h>
 #include <ar_sys/ArucoCornerMsg.h>
 #include <ar_sys/SingleCorner.h>
+
+#include <opencv2/core.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/calib3d.hpp>
 
 
 #include "camera_imu_calib/estimator.h"
@@ -25,6 +30,9 @@
 #define TOP_RIGHT 2
 #define BOTTOM_LEFT 4
 #define BOTTOM_RIGHT 6
+
+#define ACC_SAMPLE_SIZE 20
+#define CORNER_SAMPLE_SIZE 20
 
 
 namespace calibration{
@@ -35,16 +43,31 @@ namespace calibration{
         ros::NodeHandle nh_;
         ros::Publisher state_publisher_;
 
-        double last_time_stamp;
         bool initialize;
         bool got_measurement;
+        bool accel_calibrated;
+        bool initialized_pnp;
+
+        int accInitSampleCount;
+        int cornerSampleCount;
+
+        double last_time_stamp;
+
+        geometry_msgs::Vector3 accSampleAverage;
+
+        Eigen::MatrixXd expected_measurement;
+
+        Eigen::Vector3d pnp_average_translation;
+        Eigen::MatrixXd pnp_quaternion_stack;
 
         void nonLinearPropagation(Eigen::Vector3d omega, Eigen::Vector3d acceleration);
         void nonLinearUpdate();
         void aruco_helper(ar_sys::SingleCorner metric_corner, ar_sys::SingleCorner pixel_corner, unsigned int index, unsigned int position);
+        void initializeAcc(geometry_msgs::Vector3 acc);
+        void initializePNP(ar_sys::ArucoCornerMsg aruco_corners);
+        void getCamParams(const sensor_msgs::CameraInfo& cam_info);
 
-        Eigen::MatrixXd expected_measurement;
-
+        cv::Mat cameraMatrix, distortionCoeffs;
 
     public:
         CameraIMUEKF();
@@ -55,13 +78,15 @@ namespace calibration{
         int cx;
         int cy;
 
+        bool got_camera_parameters;
 
         void sensorUpdate(sensor_msgs::Imu imu);
         void sensorUpdate(ar_sys::ArucoCornerMsg aruco_corners);
-
-
+        void getCameraInfo(const sensor_msgs::CameraInfo &msg);
 
     };
+
+    double getVectorMagnitude(double x, double y, double z);
 }
 
 #endif //CALIBRATION_WS_CAMERA_IMU_EKF_H

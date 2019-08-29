@@ -10,7 +10,10 @@ namespace calibration{
     nh_private("~"),
     nh_(""),
     initialize(false),
-    got_measurement(false)
+    got_measurement(false),
+    got_camera_parameters(false),
+    initialized_pnp(false),
+    cornerSampleCount(false)
     {
         nh_private.param<double>("estimator_dt", dt, 0.002);
         nh_private.param<int>("number_of_features", number_of_features, 16);
@@ -75,18 +78,160 @@ namespace calibration{
 
     CameraIMUEKF::~CameraIMUEKF() {}
 
+    void CameraIMUEKF::initializePNP(ar_sys::ArucoCornerMsg aruco_corners) {
+
+
+        int num_of_markers = aruco_corners.pixel_corners.size();
+
+        std::vector< cv::Point3f > objPnts;
+        objPnts.reserve(num_of_markers);
+        std::vector< cv::Point2f > imgPnts;
+        imgPnts.reserve(num_of_markers);
+
+        for(int i = 0; i <num_of_markers; i++)
+        {
+            int index = 4 * i;
+            objPnts.push_back(cv::Point3f(aruco_corners.metric_corners[index].top_left.x, aruco_corners.metric_corners[index].top_left.y, aruco_corners.metric_corners[index].top_left.z ));
+            imgPnts.push_back(cv::Point2f(aruco_corners.pixel_corners[index].top_left.x, aruco_corners.pixel_corners[index].top_left.y));
+
+            objPnts.push_back(cv::Point3f(aruco_corners.metric_corners[index+1].top_right.x, aruco_corners.metric_corners[index+1].top_right.y, aruco_corners.metric_corners[index+1].top_right.z ));
+            imgPnts.push_back(cv::Point2f(aruco_corners.pixel_corners[index+1].top_right.x, aruco_corners.pixel_corners[index+1].top_right.y));
+
+            objPnts.push_back(cv::Point3f(aruco_corners.metric_corners[index+2].bottom_right.x, aruco_corners.metric_corners[index+2].bottom_right.y, aruco_corners.metric_corners[index+2].bottom_right.z ));
+            imgPnts.push_back(cv::Point2f(aruco_corners.pixel_corners[index+2].bottom_right.x, aruco_corners.pixel_corners[index+2].bottom_right.y));
+
+            objPnts.push_back(cv::Point3f(aruco_corners.metric_corners[index+2].bottom_left.x, aruco_corners.metric_corners[index+3].bottom_left.y, aruco_corners.metric_corners[index+3].bottom_left.z ));
+            imgPnts.push_back(cv::Point2f(aruco_corners.pixel_corners[index+2].bottom_left.x, aruco_corners.pixel_corners[index+3].bottom_left.y));
+        }
+
+        cv::Mat objPoints, imgPoints;
+        cv::Mat(objPnts).copyTo(objPoints);
+        cv::Mat(imgPnts).copyTo(imgPoints);
+
+        if (objPoints.total() == 0)
+            return;
+
+        cv::Vec3d tvec(0, 0, 1);
+        cv::Vec3d rvec(0, 0, 0);
+        cv::Mat guessRotMat = (cv::Mat_<double>(3, 3) << 1, 0, 0, 0, 1, 0, 0, 0, 1);
+        cv::Rodrigues(guessRotMat, rvec);
+
+        cv::solvePnP(objPoints, imgPoints, cameraMatrix, distortionCoeffs, rvec, tvec, true);
+
+        cv::Mat rotMat;
+        cv::Rodrigues(rvec, rotMat);
+        cv::Mat eZ = (cv::Mat_<double>(3, 1) << 0.0, 0.0, 1.0);
+        cv::Mat eZ_prime = rotMat*eZ;
+
+        if (tvec[2] < 0) {
+            std::cout << "cv::solvePnP converged to invalid transform translation z = " << tvec[2] <<
+                      " when, in reality we must assert, z > 0." << std::endl;
+            return;
+        }
+        if (eZ_prime.at<double>(2,0) > 0) {
+            // flip y and z
+            rotMat.at<double>(0, 1) *= -1.0;
+            rotMat.at<double>(1, 1) *= -1.0;
+            rotMat.at<double>(2, 1) *= -1.0;
+            rotMat.at<double>(0, 2) *= -1.0;
+            rotMat.at<double>(1, 2) *= -1.0;
+            rotMat.at<double>(2, 2) *= -1.0;
+            eZ = (cv::Mat_<double>(3, 1) << 0.0, 0.0, 1.0);
+            eZ_prime = rotMat*eZ;
+            if (eZ_prime.at<double>(2,0) > 0) {
+                // flip y again
+                rotMat.at<double>(0, 1) *= -1.0;
+                rotMat.at<double>(1, 1) *= -1.0;
+                rotMat.at<double>(2, 1) *= -1.0;
+                // flip x and z (z is already flipped from above)
+                rotMat.at<double>(0, 0) *= -1.0;
+                rotMat.at<double>(1, 0) *= -1.0;
+                rotMat.at<double>(2, 0) *= -1.0;
+                //std::cout << "Different fix via XZ-flip applied." << std::endl;
+            } else {
+                //std::cout << "fix via YZ-flip applied." << std::endl;
+            }
+            eZ = (cv::Mat_<double>(3, 1) << 0.0, 0.0, 1.0);
+            eZ_prime = rotMat*eZ;
+            cv::Rodrigues(rotMat, rvec);
+        }
+
+        Eigen::Matrix3d rot_mat;
+        rot_mat << rotMat.at<double>(0, 0), rotMat.at<double>(0, 1), rotMat.at<double>(0, 2),
+                rotMat.at<double>(1, 0), rotMat.at<double>(1, 1), rotMat.at<double>(1, 2),
+                rotMat.at<double>(2, 0), rotMat.at<double>(2, 1), rotMat.at<double>(2, 2);
+
+        Eigen::Quaterniond pnp_rotation(rot_mat);
+        Eigen::Vector3d pnp_translation(tvec[0], tvec[1], tvec[2]);
+
+
+        cornerSampleCount++;
+
+        if(cornerSampleCount == CORNER_SAMPLE_SIZE)
+        {
+            initialized_pnp = true;
+        }
+
+
+    }
+
+    void CameraIMUEKF::getCameraInfo(const sensor_msgs::CameraInfo &msg){
+
+        fx = msg.K[0];
+        fy = msg.K[4];
+        cx = msg.K[2];
+        cy = msg.K[5];
+        getCamParams(msg);
+        got_camera_parameters = true;
+    }
+
+    void CameraIMUEKF::getCamParams(const sensor_msgs::CameraInfo &cam_info) {
+        cameraMatrix = cv::Mat::zeros(3, 3, CV_32FC1);
+        distortionCoeffs = cv::Mat::zeros(5, 1, CV_32FC1);
+
+        for (int i = 0; i < 9; ++i) {
+            //std::cout << cam_info.K[i] <<" " << std::endl;
+            cameraMatrix.at<float>(i / 3, i % 3) = cam_info.K[i];
+        }
+        for (int i = 0; i < 5; ++i) {
+            //std::cout << cam_info.D[i] <<" " << std::endl;
+            distortionCoeffs.at<float>(i, 0) = cam_info.D[i];
+        }
+    }
+
+    void CameraIMUEKF::initializeAcc(geometry_msgs::Vector3 acc) {
+
+        accSampleAverage.x += acc.x;
+        accSampleAverage.y += acc.y;
+        accSampleAverage.z += acc.z;
+        accInitSampleCount++;
+
+        if (accInitSampleCount == ACC_SAMPLE_SIZE){
+
+            accSampleAverage.x /= ACC_SAMPLE_SIZE;
+            accSampleAverage.y /= ACC_SAMPLE_SIZE;
+            accSampleAverage.z /= ACC_SAMPLE_SIZE;
+            accel_calibrated = true;
+        }
+
+    }
+
     void CameraIMUEKF::sensorUpdate(sensor_msgs::Imu imu) {
 
-        initialize = true;
+        if (isnan(getVectorMagnitude(imu.linear_acceleration.x, imu.linear_acceleration.y,imu.linear_acceleration.z))){
+            ROS_ERROR_STREAM("IMU is giving NaNs");
+            return;
+        }
 
-        if(!initialize){
+        if(!accel_calibrated){
             // TODO: Initialize the xhat using PNP
+            initializeAcc(imu.linear_acceleration);
             last_time_stamp = imu.header.stamp.toSec();
-            initialize = true;
             return;
         }
 
         dt = imu.header.stamp.toSec() - last_time_stamp;
+        last_time_stamp = imu.header.stamp.toSec();
 
         Eigen::Vector3d omega_imu;
         Eigen::Vector3d accelxyz_in_body_frame;
@@ -108,20 +253,21 @@ namespace calibration{
         if(aruco_corners.pixel_corners.size() != number_of_features/4)
             return;
 
+        if(!initialized_pnp){
+            initializePNP(aruco_corners);
+            return;
+        }
+
         z.setZero();
         H.setZero();
         expected_measurement.setZero();
-
-        fx = fy = 600;
-        cx = 320;
-        cy = 240;
-
         for(unsigned int i =0; i < aruco_corners.metric_corners.size(); i++){
             aruco_helper(aruco_corners.metric_corners[i].top_left, aruco_corners.pixel_corners[i].top_left, i, TOP_LEFT);
             aruco_helper(aruco_corners.metric_corners[i].top_right, aruco_corners.pixel_corners[i].top_right, i, TOP_RIGHT);
             aruco_helper(aruco_corners.metric_corners[i].bottom_right, aruco_corners.pixel_corners[i].bottom_right, i, BOTTOM_RIGHT);
             aruco_helper(aruco_corners.metric_corners[i].bottom_left, aruco_corners.pixel_corners[i].bottom_left, i, BOTTOM_LEFT);
         }
+
         got_measurement = true;
 
     }
@@ -268,5 +414,12 @@ namespace calibration{
         P = ( Eigen::MatrixXd::Identity(21,21) - K * H ) * P;
 
     }
+
+    double getVectorMagnitude(double x, double y, double z)
+    {
+        return sqrt(x * x + y * y + z * z);
+    }
+
+
 
 }
