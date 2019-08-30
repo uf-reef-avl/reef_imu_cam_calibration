@@ -173,7 +173,7 @@ namespace calibration{
 //        Eigen::Vector3d rpy;
 //        reef_msgs::roll_pitch_yaw_from_rotation321(rot_mat, rpy);
 
-        auto rpy = rot_mat.eulerAngles(0, 1, 2);
+        Eigen::Vector3d rpy = rot_mat.eulerAngles(0, 1, 2);
         ROS_WARN_STREAM("RPY conversion is  \n" <<rpy);
 
         pnp_average_euler +=rpy;

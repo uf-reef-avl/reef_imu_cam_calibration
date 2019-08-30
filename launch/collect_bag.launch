@@ -2,9 +2,9 @@
 
     <arg name="record_bag" default="true"/>
     <arg name="bag_name" default="test"/>
-    <arg name="driver_astra" value="false"/>
-    <arg name="driver_openni2" value="true"/>
-    <arg name="vehicle" default="dodo"/>
+    <arg name="driver_astra" value="true"/>
+    <arg name="driver_openni2" value="false"/>
+    <arg name="vehicle" default="kiwi"/>
 
     <group if="$(arg driver_astra)">
         <include file="$(find astra_launch)/launch/astra_pro.launch"/>
@@ -22,11 +22,11 @@
     <arg name="result_draw_markers_axis" default="true" />
     <arg name="uid" default=""/>
     <arg name="video_rectified" default="false" />
-    <arg name="board_config" default="$(find ar_sys)/data/single/big_board_4_markers.yaml" />
+    <arg name="board_config" default="$(find ar_sys)/data/single/big_board_4_markers.yml" />
     <arg name="board_frame_id" default="ar_calib_frame" />
-    <arg name="marker_size" default="0.035" />
+    <arg name="marker_size" default="0.2032" />
     <arg name="publish_tf" default="false" />
-    <node ns="/" pkg="ar_sys" type="single_board" name="ar_single_board$" output="screen">
+    <node ns="/" pkg="ar_sys" type="single_board" name="ar_single_board" output="screen">
         <remap from="/camera_info" to="/camera/rgb/camera_info" if="$(arg driver_astra)"/>
         <remap from="/image" to="/camera/rgb/image_raw" if="$(arg driver_astra)"/>
         <remap from="/camera_info" to="/camera/rgb/camera_info" if="$(arg driver_openni2)"/>
