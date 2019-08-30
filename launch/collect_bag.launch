@@ -1,0 +1,62 @@
+<launch>
+
+    <arg name="record_bag" default="true"/>
+    <arg name="bag_name" default="test"/>
+    <arg name="driver_astra" value="false"/>
+    <arg name="driver_openni2" value="true"/>
+    <arg name="vehicle" default="dodo"/>
+
+    <group if="$(arg driver_astra)">
+        <include file="$(find astra_launch)/launch/astra_pro.launch"/>
+        <arg name="camera_info" default="file://$(env HOME)/.ros/camera_info/rgb_Astra_Orbbec.yaml"/>
+    </group>
+
+    <group if="$(arg driver_openni2)">
+        <include file="$(find openni2_launch)/launch/openni2.launch"/>
+    </group>
+
+    <arg name="result_display" default="true"/>
+    <arg name="result_autosize" default="true"/>
+    <arg name="result_draw_markers" default="true" />
+    <arg name="publish_corners" default="true" />
+    <arg name="result_draw_markers_axis" default="true" />
+    <arg name="uid" default=""/>
+    <arg name="video_rectified" default="false" />
+    <arg name="board_config" default="$(find ar_sys)/data/single/pose_calib_test.yml" />
+    <arg name="board_frame_id" default="ar_calib_frame" />
+    <arg name="marker_size" default="0.035" />
+    <arg name="publish_tf" default="false" />
+    <node ns="/" pkg="ar_sys" type="single_board" name="ar_single_board$" output="screen">
+        <remap from="/camera_info" to="/camera/rgb/camera_info" if="$(arg driver_astra)"/>
+        <remap from="/image" to="/camera/rgb/image_raw" if="$(arg driver_astra)"/>
+        <remap from="/camera_info" to="/camera/rgb/camera_info" if="$(arg driver_openni2)"/>
+        <remap from="/image" to="/camera/rgb/image_raw" if="$(arg driver_openni2)"/>
+        <param name="image_is_rectified" type="bool" value="$(arg video_rectified)"/>
+        <param name="board_config" type="string" value="$(arg board_config)"/>
+        <param name="board_frame" type="string" value="/$(arg board_frame_id)" />
+        <param name="marker_size" type="double" value="$(arg marker_size)"/>
+        <param name="draw_markers" type="bool" value="$(arg result_draw_markers)" />
+        <param name="draw_markers_axis" type="bool" value="$(arg result_draw_markers_axis)" />
+        <param name="publish_tf" value="$(arg publish_tf)" />
+        <param name="publish_corners" value="$(arg publish_corners)" />
+    </node>
+    <group if="$(arg result_display)">
+        <node ns="/" pkg="image_view" type="image_view" name="image_view$(arg uid)" output="screen">
+            <!--            <remap from="image" to="/camera/rgb/image_raw" />-->
+            <remap from="image" to="/ar_single_board/result" />
+            <param name="autosize" type="bool" value="$(arg result_autosize)" />
+        </node>
+    </group>
+
+    <node name="rosflight" pkg="rosflight" type="rosflight_io" output="screen">
+        <param name="port" value="/dev/ttyUSB0"/>
+    </node>
+
+    <node pkg="ros_vrpn_client" name="$(arg vehicle)" type="ros_vrpn_client" args="_vrpn_server_ip:=192.168.1.104" required="true" output="screen"/>
+
+    <node pkg="ros_vrpn_client" name="tf_calib" type="ros_vrpn_client" args="_vrpn_server_ip:=192.168.1.104" required="true" output="screen"/>
+
+
+    <node if="$(arg record_bag)" name="record" pkg="rosbag" type="record" args="-O $(arg bag_name) ar_single_board/corner ar_single_board/pose ar_single_board/result camera/rgb/image_raw camera/rgb/camera_info imu/data $(arg vehicle)/ned/pose_stamped tf_calib/ned/pose_stamped"/>
+
+</launch>
