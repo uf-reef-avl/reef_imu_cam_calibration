@@ -9,11 +9,12 @@ namespace calibration{
 
         corner_subscriber = nh_.subscribe("/ar_single_board/corner", 1, &SensorManager::cornerCallback, this);
         imu_subscriber_ = nh_.subscribe("imu/data", 1, &SensorManager::imuCallback, this);
-        camera_info_subscriber = nh_.subscribe("camera_info", 1, &SensorManager::cameraInfoCallback,this);
+        camera_info_subscriber = nh_.subscribe("camera/rgb/camera_info", 1, &SensorManager::cameraInfoCallback,this);
     }
 
     void SensorManager::cornerCallback(const ar_sys::ArucoCornerMsg &msg) {
-        calib_obj.sensorUpdate(msg);
+        if(calib_obj.got_camera_parameters)
+            calib_obj.sensorUpdate(msg);
     }
 
     void SensorManager::imuCallback(const sensor_msgs::ImuConstPtr &msg) {

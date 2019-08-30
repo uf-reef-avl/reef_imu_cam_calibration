@@ -13,7 +13,8 @@ namespace calibration{
     got_measurement(false),
     got_camera_parameters(false),
     initialized_pnp(false),
-    cornerSampleCount(false)
+    cornerSampleCount(false),
+    fx(0),fy(0),cx(0),cy(0)
     {
         nh_private.param<double>("estimator_dt", dt, 0.002);
         nh_private.param<int>("number_of_features", number_of_features, 16);
@@ -89,24 +90,24 @@ namespace calibration{
         int num_of_markers = aruco_corners.pixel_corners.size();
 
         std::vector< cv::Point3f > objPnts;
-        objPnts.reserve(num_of_markers);
+        objPnts.reserve(4 * num_of_markers);
         std::vector< cv::Point2f > imgPnts;
-        imgPnts.reserve(num_of_markers);
+        imgPnts.reserve(4 * num_of_markers);
 
         for(int i = 0; i <num_of_markers; i++)
         {
-            int index = 4 * i;
+            int index = i;
             objPnts.push_back(cv::Point3f(aruco_corners.metric_corners[index].top_left.x, aruco_corners.metric_corners[index].top_left.y, aruco_corners.metric_corners[index].top_left.z ));
             imgPnts.push_back(cv::Point2f(aruco_corners.pixel_corners[index].top_left.x, aruco_corners.pixel_corners[index].top_left.y));
 
-            objPnts.push_back(cv::Point3f(aruco_corners.metric_corners[index+1].top_right.x, aruco_corners.metric_corners[index+1].top_right.y, aruco_corners.metric_corners[index+1].top_right.z ));
-            imgPnts.push_back(cv::Point2f(aruco_corners.pixel_corners[index+1].top_right.x, aruco_corners.pixel_corners[index+1].top_right.y));
+            objPnts.push_back(cv::Point3f(aruco_corners.metric_corners[index].top_right.x, aruco_corners.metric_corners[index].top_right.y, aruco_corners.metric_corners[index].top_right.z ));
+            imgPnts.push_back(cv::Point2f(aruco_corners.pixel_corners[index].top_right.x, aruco_corners.pixel_corners[index].top_right.y));
 
-            objPnts.push_back(cv::Point3f(aruco_corners.metric_corners[index+2].bottom_right.x, aruco_corners.metric_corners[index+2].bottom_right.y, aruco_corners.metric_corners[index+2].bottom_right.z ));
-            imgPnts.push_back(cv::Point2f(aruco_corners.pixel_corners[index+2].bottom_right.x, aruco_corners.pixel_corners[index+2].bottom_right.y));
+            objPnts.push_back(cv::Point3f(aruco_corners.metric_corners[index].bottom_right.x, aruco_corners.metric_corners[index].bottom_right.y, aruco_corners.metric_corners[index].bottom_right.z ));
+            imgPnts.push_back(cv::Point2f(aruco_corners.pixel_corners[index].bottom_right.x, aruco_corners.pixel_corners[index].bottom_right.y));
 
-            objPnts.push_back(cv::Point3f(aruco_corners.metric_corners[index+2].bottom_left.x, aruco_corners.metric_corners[index+3].bottom_left.y, aruco_corners.metric_corners[index+3].bottom_left.z ));
-            imgPnts.push_back(cv::Point2f(aruco_corners.pixel_corners[index+2].bottom_left.x, aruco_corners.pixel_corners[index+3].bottom_left.y));
+            objPnts.push_back(cv::Point3f(aruco_corners.metric_corners[index].bottom_left.x, aruco_corners.metric_corners[index].bottom_left.y, aruco_corners.metric_corners[index].bottom_left.z ));
+            imgPnts.push_back(cv::Point2f(aruco_corners.pixel_corners[index].bottom_left.x, aruco_corners.pixel_corners[index].bottom_left.y));
         }
 
         cv::Mat objPoints, imgPoints;
@@ -122,6 +123,9 @@ namespace calibration{
         cv::Rodrigues(guessRotMat, rvec);
 
         cv::solvePnP(objPoints, imgPoints, cameraMatrix, distortionCoeffs, rvec, tvec, true);
+
+        ROS_WARN_STREAM("PNP Solution \n " << rvec);
+//        ROS_WARN_STREAM("PNP Solution \n " << tvec);
 
         cv::Mat rotMat;
         cv::Rodrigues(rvec, rotMat);
@@ -152,9 +156,6 @@ namespace calibration{
                 rotMat.at<double>(0, 0) *= -1.0;
                 rotMat.at<double>(1, 0) *= -1.0;
                 rotMat.at<double>(2, 0) *= -1.0;
-                //std::cout << "Different fix via XZ-flip applied." << std::endl;
-            } else {
-                //std::cout << "fix via YZ-flip applied." << std::endl;
             }
             eZ = (cv::Mat_<double>(3, 1) << 0.0, 0.0, 1.0);
             eZ_prime = rotMat*eZ;
@@ -168,22 +169,18 @@ namespace calibration{
 
 
 //        Eigen::Quaterniond pnp_rotation(rot_mat);
-//
 //        pnp_quaternion_stack.block<4,1>(0,cornerSampleCount);
+//        Eigen::Vector3d rpy;
+//        reef_msgs::roll_pitch_yaw_from_rotation321(rot_mat, rpy);
 
-        Eigen::Vector3d rpy;
-
-        reef_msgs::roll_pitch_yaw_from_rotation321(rot_mat, rpy);
+        auto rpy = rot_mat.eulerAngles(0, 1, 2);
+        ROS_WARN_STREAM("RPY conversion is  \n" <<rpy);
 
         pnp_average_euler +=rpy;
-
-
         cornerSampleCount++;
-
         pnp_average_translation.x() += tvec[0];
         pnp_average_translation.y() += tvec[1];
         pnp_average_translation.z() += tvec[2];
-
         if(cornerSampleCount == CORNER_SAMPLE_SIZE)
         {
             pnp_average_euler.x() = pnp_average_euler.x()/CORNER_SAMPLE_SIZE;
@@ -195,7 +192,25 @@ namespace calibration{
             pnp_average_translation.z() = pnp_average_translation.z()/CORNER_SAMPLE_SIZE;
             initialized_pnp = true;
 
-            // TODO Initialize the XHAT Vector!
+            Eigen::Quaterniond average_quaternion = Eigen::AngleAxisd(pnp_average_euler.x(), Eigen::Vector3d::UnitX())
+                    * Eigen::AngleAxisd(pnp_average_euler.y(), Eigen::Vector3d::UnitY())
+                    * Eigen::AngleAxisd(pnp_average_euler.z(), Eigen::Vector3d::UnitZ());
+
+            Eigen::Quaterniond camera_to_imu_quad;
+            camera_to_imu_quad.vec() << xHat(19), xHat(20), xHat(21);
+            camera_to_imu_quad.w() = xHat(22);
+
+            Eigen::Matrix3d average_camera_to_world = average_quaternion.toRotationMatrix().transpose();
+            Eigen::Matrix3d camera_to_imu = camera_to_imu_quad.toRotationMatrix();
+
+            Eigen::Matrix3d world_to_imu = camera_to_imu * average_camera_to_world;
+            Eigen::Vector3d world_to_imu_pose = world_to_imu * pnp_average_translation;
+
+            Eigen::Quaterniond world_to_imu_quat(world_to_imu);
+
+            xHat.block<3,1>(0,0) << world_to_imu_quat.vec();
+            xHat(3,0) = world_to_imu_quat.w();
+            xHat.block<3,1>(4,0) << world_to_imu_pose;
         }
     }
 
@@ -260,14 +275,14 @@ namespace calibration{
         dt = imu.header.stamp.toSec() - last_time_stamp;
         last_time_stamp = imu.header.stamp.toSec();
 
-        imu.linear_acceleration.x = imu.linear_acceleration.x - accSampleAverage.x;
-        imu.linear_acceleration.y = imu.linear_acceleration.y - accSampleAverage.z;
-        imu.linear_acceleration.z = imu.linear_acceleration.y - accSampleAverage.z;
+//        imu.linear_acceleration.x = imu.linear_acceleration.x - accSampleAverage.x;
+//        imu.linear_acceleration.y = imu.linear_acceleration.y - accSampleAverage.z;
+//        imu.linear_acceleration.z = imu.linear_acceleration.y - accSampleAverage.z;
 
         Eigen::Vector3d omega_imu;
         Eigen::Vector3d accelxyz_in_body_frame;
         omega_imu << imu.angular_velocity.x , imu.angular_velocity.y, imu.angular_velocity.z;
-        accelxyz_in_body_frame << imu.linear_acceleration.x, imu.linear_acceleration.y, imu.linear_acceleration.z; //This is a column vector.
+        accelxyz_in_body_frame << imu.linear_acceleration.x, imu.linear_acceleration.y, imu.linear_acceleration.z;
 
         nonLinearPropagation(omega_imu, accelxyz_in_body_frame);
 
@@ -384,10 +399,12 @@ namespace calibration{
         G.block<3,3>(9,6) = I;
         G.block<3,3>(12,9) = I;
 
+        Eigen::Vector3d gravity_vector(accSampleAverage.x, accSampleAverage.y, accSampleAverage.z);
+
         Eigen::MatrixXd true_dynamics(19,1);
         true_dynamics.setZero();
         true_dynamics.block<3,1>(0,0) = velocity_W;
-        true_dynamics.block<3,1>(3,0) = world_to_imu_quat.toRotationMatrix() * acceleration;
+        true_dynamics.block<3,1>(3,0) = world_to_imu_quat.toRotationMatrix() * acceleration + gravity_vector;
 
         Eigen::Matrix4d Omega_matrix;
         Omega_matrix.setZero();
