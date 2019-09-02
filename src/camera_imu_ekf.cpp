@@ -13,6 +13,8 @@ namespace calibration{
     got_measurement(false),
     got_camera_parameters(false),
     initialized_pnp(false),
+    accel_calibrated(false),
+    accInitSampleCount(0),
     cornerSampleCount(false),
     fx(0),fy(0),cx(0),cy(0)
     {
@@ -124,9 +126,6 @@ namespace calibration{
 
         cv::solvePnP(objPoints, imgPoints, cameraMatrix, distortionCoeffs, rvec, tvec, true);
 
-        ROS_WARN_STREAM("PNP Solution \n " << rvec);
-//        ROS_WARN_STREAM("PNP Solution \n " << tvec);
-
         cv::Mat rotMat;
         cv::Rodrigues(rvec, rotMat);
         cv::Mat eZ = (cv::Mat_<double>(3, 1) << 0.0, 0.0, 1.0);
@@ -174,15 +173,14 @@ namespace calibration{
 //        reef_msgs::roll_pitch_yaw_from_rotation321(rot_mat, rpy);
 
         Eigen::Vector3d rpy = rot_mat.eulerAngles(0, 1, 2);
-        ROS_WARN_STREAM("RPY conversion is  \n" <<rpy);
-
         pnp_average_euler +=rpy;
-        cornerSampleCount++;
         pnp_average_translation.x() += tvec[0];
         pnp_average_translation.y() += tvec[1];
         pnp_average_translation.z() += tvec[2];
-        if(cornerSampleCount == CORNER_SAMPLE_SIZE)
-        {
+        cornerSampleCount++;
+        ROS_WARN_STREAM("Counter is \t" << cornerSampleCount);
+        if(cornerSampleCount == CORNER_SAMPLE_SIZE){
+
             pnp_average_euler.x() = pnp_average_euler.x()/CORNER_SAMPLE_SIZE;
             pnp_average_euler.y() = pnp_average_euler.y()/CORNER_SAMPLE_SIZE;
             pnp_average_euler.z() = pnp_average_euler.z()/CORNER_SAMPLE_SIZE;
@@ -190,7 +188,9 @@ namespace calibration{
             pnp_average_translation.x() = pnp_average_translation.x()/CORNER_SAMPLE_SIZE;
             pnp_average_translation.y() = pnp_average_translation.y()/CORNER_SAMPLE_SIZE;
             pnp_average_translation.z() = pnp_average_translation.z()/CORNER_SAMPLE_SIZE;
-            initialized_pnp = true;
+
+            ROS_WARN_STREAM("Average Rotation is  \n" <<pnp_average_euler);
+            ROS_WARN_STREAM("Average Translation is  \n" <<pnp_average_translation);
 
             Eigen::Quaterniond average_quaternion = Eigen::AngleAxisd(pnp_average_euler.x(), Eigen::Vector3d::UnitX())
                     * Eigen::AngleAxisd(pnp_average_euler.y(), Eigen::Vector3d::UnitY())
@@ -207,10 +207,12 @@ namespace calibration{
             Eigen::Vector3d world_to_imu_pose = world_to_imu * pnp_average_translation;
 
             Eigen::Quaterniond world_to_imu_quat(world_to_imu);
+            initialized_pnp = true;
 
             xHat.block<3,1>(0,0) << world_to_imu_quat.vec();
             xHat(3,0) = world_to_imu_quat.w();
             xHat.block<3,1>(4,0) << world_to_imu_pose;
+            ROS_WARN_STREAM("XHat post initialization is  \n" <<xHat);
         }
     }
 
@@ -269,15 +271,19 @@ namespace calibration{
             return;
         }
 
-        if(!initialized_pnp)
-            return;
-
         dt = imu.header.stamp.toSec() - last_time_stamp;
         last_time_stamp = imu.header.stamp.toSec();
 
-//        imu.linear_acceleration.x = imu.linear_acceleration.x - accSampleAverage.x;
-//        imu.linear_acceleration.y = imu.linear_acceleration.y - accSampleAverage.z;
-//        imu.linear_acceleration.z = imu.linear_acceleration.y - accSampleAverage.z;
+        if(!initialized_pnp)
+            return;
+
+        ROS_WARN_STREAM("Average Accelerations is \n" <<accSampleAverage);
+
+        ROS_WARN_STREAM("Measured Accelerations is \n" <<imu.linear_acceleration);
+
+        imu.linear_acceleration.x = imu.linear_acceleration.x - accSampleAverage.x;
+        imu.linear_acceleration.y = imu.linear_acceleration.y - accSampleAverage.y;
+        imu.linear_acceleration.z = imu.linear_acceleration.z - accSampleAverage.z;
 
         Eigen::Vector3d omega_imu;
         Eigen::Vector3d accelxyz_in_body_frame;
@@ -285,6 +291,7 @@ namespace calibration{
         accelxyz_in_body_frame << imu.linear_acceleration.x, imu.linear_acceleration.y, imu.linear_acceleration.z;
 
         nonLinearPropagation(omega_imu, accelxyz_in_body_frame);
+        ROS_WARN_STREAM("Xhat in propogartion is \n " << xHat);
 
         if(got_measurement){
             nonLinearUpdate();
@@ -311,9 +318,7 @@ namespace calibration{
             aruco_helper(aruco_corners.metric_corners[i].bottom_right, aruco_corners.pixel_corners[i].bottom_right, i, BOTTOM_RIGHT);
             aruco_helper(aruco_corners.metric_corners[i].bottom_left, aruco_corners.pixel_corners[i].bottom_left, i, BOTTOM_LEFT);
         }
-
         got_measurement = true;
-
     }
 
     void CameraIMUEKF::aruco_helper(ar_sys::SingleCorner metric_corner, ar_sys::SingleCorner pixel_corner,
@@ -399,12 +404,10 @@ namespace calibration{
         G.block<3,3>(9,6) = I;
         G.block<3,3>(12,9) = I;
 
-        Eigen::Vector3d gravity_vector(accSampleAverage.x, accSampleAverage.y, accSampleAverage.z);
-
         Eigen::MatrixXd true_dynamics(19,1);
         true_dynamics.setZero();
         true_dynamics.block<3,1>(0,0) = velocity_W;
-        true_dynamics.block<3,1>(3,0) = world_to_imu_quat.toRotationMatrix() * acceleration + gravity_vector;
+        true_dynamics.block<3,1>(3,0) = world_to_imu_quat.toRotationMatrix() * acceleration;
 
         Eigen::Matrix4d Omega_matrix;
         Omega_matrix.setZero();
@@ -412,8 +415,8 @@ namespace calibration{
         Omega_matrix.block<3,1>(0,3) = omega;
         Omega_matrix.block<1,3>(3,0) = -omega.transpose();
 
-        dt = 0.01;
         world_to_imu_quat = (Eigen::Matrix4d::Identity() + 0.5 * dt * Omega_matrix) * world_to_imu_quat.coeffs() ;
+        world_to_imu_quat.normalize();
 
         xHat.block<19,1>(4,0) = xHat.block<19,1>(4,0) + dt * true_dynamics;
         xHat.block<4,1>(0,0) =  world_to_imu_quat.coeffs();
@@ -465,7 +468,4 @@ namespace calibration{
     {
         return sqrt(x * x + y * y + z * z);
     }
-
-
-
 }

@@ -1,4 +1,4 @@
-//
+//initialized_pnp
 // Created by prashant on 7/16/19.
 //
 #include "../include/camera_imu_calib/sensor_manager.h"
