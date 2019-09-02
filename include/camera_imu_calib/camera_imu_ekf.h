@@ -26,6 +26,8 @@
 
 #include "camera_imu_calib/estimator.h"
 
+#include <camera_imu_calib/IMUCalibration.h>
+
 #define TOP_LEFT 0
 #define TOP_RIGHT 2
 #define BOTTOM_LEFT 4
@@ -67,7 +69,10 @@ namespace calibration{
         void initializePNP(ar_sys::ArucoCornerMsg aruco_corners);
         void getCamParams(const sensor_msgs::CameraInfo& cam_info);
 
+        void publish_state();
+
         cv::Mat cameraMatrix, distortionCoeffs;
+        camera_imu_calib::IMUCalibration state_msg;
 
     public:
         CameraIMUEKF();

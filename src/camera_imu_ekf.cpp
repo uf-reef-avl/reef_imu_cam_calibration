@@ -75,7 +75,7 @@ namespace calibration{
         Estimator::initialize();
 
         //TODO Make new message or change the message type.
-        state_publisher_ = nh_.advertise<reef_msgs::XYZDebugEstimate>("xyz_estimate", 1, true);
+        state_publisher_ = nh_.advertise<camera_imu_calib::IMUCalibration>("imu_calib", 1, true);
 
         pnp_average_translation.setZero();
         pnp_average_euler.setZero();
@@ -264,6 +264,7 @@ namespace calibration{
             return;
         }
 
+
         if(!accel_calibrated){
             // TODO: Initialize the xhat using PNP
             initializeAcc(imu.linear_acceleration);
@@ -276,6 +277,8 @@ namespace calibration{
 
         if(!initialized_pnp)
             return;
+
+        state_msg.header = imu.header;
 
         ROS_WARN_STREAM("Average Accelerations is \n" <<accSampleAverage);
 
@@ -295,6 +298,7 @@ namespace calibration{
 
         if(got_measurement){
             nonLinearUpdate();
+            ROS_WARN_STREAM("Xhat after Update is \n " << xHat);
             got_measurement = false;
         }
 
@@ -422,6 +426,7 @@ namespace calibration{
         xHat.block<4,1>(0,0) =  world_to_imu_quat.coeffs();
 
         P = P + (F * P + P * F.transpose() + G * Q * G.transpose()) * dt;
+        publish_state();
     }
 
     void CameraIMUEKF::nonLinearUpdate() {
@@ -461,6 +466,48 @@ namespace calibration{
         xHat.block<15,1>(4,0) = xHat.block<15,1>(4,0) + correction.block<15,1>(3,0);
 
         P = ( Eigen::MatrixXd::Identity(21,21) - K * H ) * P;
+        publish_state();
+
+    }
+
+    void CameraIMUEKF::publish_state() {
+        state_msg.world_to_imu.orientation.x = xHat(0);
+        state_msg.world_to_imu.orientation.y = xHat(1);
+        state_msg.world_to_imu.orientation.z = xHat(2);
+        state_msg.world_to_imu.orientation.w = xHat(3);
+
+        state_msg.world_to_imu.position.x = xHat(4);
+        state_msg.world_to_imu.position.y = xHat(5);
+        state_msg.world_to_imu.position.z = xHat(6);
+
+        state_msg.velocity.x = xHat(7);
+        state_msg.velocity.y = xHat(8);
+        state_msg.velocity.z = xHat(9);
+
+        state_msg.gyro_bias.x = xHat(10);
+        state_msg.gyro_bias.y = xHat(11);
+        state_msg.gyro_bias.z = xHat(12);
+
+        state_msg.accel_bias.x = xHat(13);
+        state_msg.accel_bias.y = xHat(14);
+        state_msg.accel_bias.z = xHat(15);
+
+        state_msg.imu_to_camera.position.x = xHat(16);
+        state_msg.imu_to_camera.position.y = xHat(17);
+        state_msg.imu_to_camera.position.z = xHat(18);
+
+        state_msg.imu_to_camera.orientation.x = xHat(19);
+        state_msg.imu_to_camera.orientation.y = xHat(20);
+        state_msg.imu_to_camera.orientation.z = xHat(21);
+        state_msg.imu_to_camera.orientation.w = xHat(22);
+
+        for(unsigned int i =0; i<20; i++){
+            state_msg.P[i] = P(i,i);
+            state_msg.sigma_minus[i] = xHat(i) - 3 * sqrt(P(i,i));
+            state_msg.sigma_plus[i] = xHat(i) + 3 * sqrt(P(i,i));
+        }
+
+        state_publisher_.publish(state_msg);
 
     }
 

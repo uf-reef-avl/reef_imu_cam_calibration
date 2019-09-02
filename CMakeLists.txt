@@ -19,6 +19,19 @@ find_package(catkin REQUIRED COMPONENTS
         ar_sys
 )
 
+find_package(Eigen3 REQUIRED)
+
+add_message_files(
+        FILES
+        IMUCalibration.msg
+)
+
+generate_messages(
+        DEPENDENCIES
+        geometry_msgs
+        std_msgs
+)
+
 catkin_package(
         INCLUDE_DIRS
         LIBRARIES
