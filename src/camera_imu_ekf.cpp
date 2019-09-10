@@ -140,8 +140,12 @@ namespace calibration{
                 rotMat.at<double>(1, 0), rotMat.at<double>(1, 1), rotMat.at<double>(1, 2),
                 rotMat.at<double>(2, 0), rotMat.at<double>(2, 1), rotMat.at<double>(2, 2);
 
+        Eigen::Vector3d pnp_trans(tvec[0], tvec[1], tvec[2]);
+        ROS_WARN_STREAM("PNP DCM is \n " << rot_mat.transpose());
+        ROS_WARN_STREAM("PNP Translation is \n " << -rot_mat * pnp_trans);
+
         Eigen::Vector3d rpy;
-        reef_msgs::roll_pitch_yaw_from_rotation321(rot_mat.transpose(), rpy);
+        reef_msgs::roll_pitch_yaw_from_rotation321(rot_mat.transpose(), rpy); //This is a C Matrix now!
 
         pnp_average_euler +=rpy;
         pnp_average_translation.x() += tvec[0];
@@ -168,15 +172,14 @@ namespace calibration{
 
             Eigen::Vector3d imu_to_camera_position(xHat(16), xHat(17), xHat(18));
 
-            Eigen::Matrix3d C_average_camera_to_world;
-            C_average_camera_to_world = reef_msgs::roll_pitch_yaw_to_rotation_321(pnp_average_euler.x(), pnp_average_euler.y(), pnp_average_euler.z());
-            ROS_WARN_STREAM("C Average Camera to World \n" << C_average_camera_to_world);
+            Eigen::Matrix3d C_average_world_to_camera;
+            C_average_world_to_camera = reef_msgs::DCM_from_Euler321(pnp_average_euler);
             Eigen::Matrix3d C_imu_to_camera = imu_to_camera_quat.toRotationMatrix().transpose();
 
-            Eigen::Matrix3d C_world_to_imu = (C_imu_to_camera * C_average_camera_to_world).transpose();
+            Eigen::Matrix3d C_world_to_imu = (C_imu_to_camera.transpose() * C_average_world_to_camera);
             Eigen::Vector3d world_to_imu_pose = -C_world_to_imu.transpose() * (imu_to_camera_position + C_imu_to_camera.transpose() * pnp_average_translation);
 
-            Eigen::Quaterniond world_to_imu_quat(C_world_to_imu.transpose());
+            Eigen::Quaterniond world_to_imu_quat(C_world_to_imu);
             initialized_pnp = true;
 
             xHat.block<3,1>(0,0) << world_to_imu_quat.vec();
