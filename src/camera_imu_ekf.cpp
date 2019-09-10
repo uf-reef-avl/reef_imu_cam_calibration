@@ -128,37 +128,11 @@ namespace calibration{
 
         cv::Mat rotMat;
         cv::Rodrigues(rvec, rotMat);
-        cv::Mat eZ = (cv::Mat_<double>(3, 1) << 0.0, 0.0, 1.0);
-        cv::Mat eZ_prime = rotMat*eZ;
 
         if (tvec[2] < 0) {
             std::cout << "cv::solvePnP converged to invalid transform translation z = " << tvec[2] <<
                       " when, in reality we must assert, z > 0." << std::endl;
             return;
-        }
-        if (eZ_prime.at<double>(2,0) > 0) {
-            // flip y and z
-            rotMat.at<double>(0, 1) *= -1.0;
-            rotMat.at<double>(1, 1) *= -1.0;
-            rotMat.at<double>(2, 1) *= -1.0;
-            rotMat.at<double>(0, 2) *= -1.0;
-            rotMat.at<double>(1, 2) *= -1.0;
-            rotMat.at<double>(2, 2) *= -1.0;
-            eZ = (cv::Mat_<double>(3, 1) << 0.0, 0.0, 1.0);
-            eZ_prime = rotMat*eZ;
-            if (eZ_prime.at<double>(2,0) > 0) {
-                // flip y again
-                rotMat.at<double>(0, 1) *= -1.0;
-                rotMat.at<double>(1, 1) *= -1.0;
-                rotMat.at<double>(2, 1) *= -1.0;
-                // flip x and z (z is already flipped from above)
-                rotMat.at<double>(0, 0) *= -1.0;
-                rotMat.at<double>(1, 0) *= -1.0;
-                rotMat.at<double>(2, 0) *= -1.0;
-            }
-            eZ = (cv::Mat_<double>(3, 1) << 0.0, 0.0, 1.0);
-            eZ_prime = rotMat*eZ;
-            cv::Rodrigues(rotMat, rvec);
         }
 
         Eigen::Matrix3d rot_mat;
@@ -166,19 +140,14 @@ namespace calibration{
                 rotMat.at<double>(1, 0), rotMat.at<double>(1, 1), rotMat.at<double>(1, 2),
                 rotMat.at<double>(2, 0), rotMat.at<double>(2, 1), rotMat.at<double>(2, 2);
 
+        Eigen::Vector3d rpy;
+        reef_msgs::roll_pitch_yaw_from_rotation321(rot_mat.transpose(), rpy);
 
-//        Eigen::Quaterniond pnp_rotation(rot_mat);
-//        pnp_quaternion_stack.block<4,1>(0,cornerSampleCount);
-//        Eigen::Vector3d rpy;
-//        reef_msgs::roll_pitch_yaw_from_rotation321(rot_mat, rpy);
-
-        Eigen::Vector3d rpy = rot_mat.eulerAngles(0, 1, 2);
         pnp_average_euler +=rpy;
         pnp_average_translation.x() += tvec[0];
         pnp_average_translation.y() += tvec[1];
         pnp_average_translation.z() += tvec[2];
         cornerSampleCount++;
-        ROS_WARN_STREAM("Counter is \t" << cornerSampleCount);
         if(cornerSampleCount == CORNER_SAMPLE_SIZE){
 
             pnp_average_euler.x() = pnp_average_euler.x()/CORNER_SAMPLE_SIZE;
@@ -192,21 +161,22 @@ namespace calibration{
             ROS_WARN_STREAM("Average Rotation is  \n" <<pnp_average_euler);
             ROS_WARN_STREAM("Average Translation is  \n" <<pnp_average_translation);
 
-            Eigen::Quaterniond average_quaternion = Eigen::AngleAxisd(pnp_average_euler.x(), Eigen::Vector3d::UnitX())
-                    * Eigen::AngleAxisd(pnp_average_euler.y(), Eigen::Vector3d::UnitY())
-                    * Eigen::AngleAxisd(pnp_average_euler.z(), Eigen::Vector3d::UnitZ());
 
-            Eigen::Quaterniond camera_to_imu_quad;
-            camera_to_imu_quad.vec() << xHat(19), xHat(20), xHat(21);
-            camera_to_imu_quad.w() = xHat(22);
+            Eigen::Quaterniond imu_to_camera_quat;
+            imu_to_camera_quat.vec() << xHat(19), xHat(20), xHat(21);
+            imu_to_camera_quat.w() = xHat(22);
 
-            Eigen::Matrix3d average_camera_to_world = average_quaternion.toRotationMatrix().transpose();
-            Eigen::Matrix3d camera_to_imu = camera_to_imu_quad.toRotationMatrix();
+            Eigen::Vector3d imu_to_camera_position(xHat(16), xHat(17), xHat(18));
 
-            Eigen::Matrix3d world_to_imu = camera_to_imu * average_camera_to_world;
-            Eigen::Vector3d world_to_imu_pose = world_to_imu * pnp_average_translation;
+            Eigen::Matrix3d C_average_camera_to_world;
+            C_average_camera_to_world = reef_msgs::roll_pitch_yaw_to_rotation_321(pnp_average_euler.x(), pnp_average_euler.y(), pnp_average_euler.z());
+            ROS_WARN_STREAM("C Average Camera to World \n" << C_average_camera_to_world);
+            Eigen::Matrix3d C_imu_to_camera = imu_to_camera_quat.toRotationMatrix().transpose();
 
-            Eigen::Quaterniond world_to_imu_quat(world_to_imu);
+            Eigen::Matrix3d C_world_to_imu = (C_imu_to_camera * C_average_camera_to_world).transpose();
+            Eigen::Vector3d world_to_imu_pose = -C_world_to_imu.transpose() * (imu_to_camera_position + C_imu_to_camera.transpose() * pnp_average_translation);
+
+            Eigen::Quaterniond world_to_imu_quat(C_world_to_imu.transpose());
             initialized_pnp = true;
 
             xHat.block<3,1>(0,0) << world_to_imu_quat.vec();
@@ -231,11 +201,9 @@ namespace calibration{
         distortionCoeffs = cv::Mat::zeros(5, 1, CV_32FC1);
 
         for (int i = 0; i < 9; ++i) {
-            //std::cout << cam_info.K[i] <<" " << std::endl;
             cameraMatrix.at<float>(i / 3, i % 3) = cam_info.K[i];
         }
         for (int i = 0; i < 5; ++i) {
-            //std::cout << cam_info.D[i] <<" " << std::endl;
             distortionCoeffs.at<float>(i, 0) = cam_info.D[i];
         }
     }
