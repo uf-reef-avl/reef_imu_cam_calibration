@@ -135,17 +135,14 @@ namespace calibration{
             return;
         }
 
-        Eigen::Matrix3d rot_mat;
-        rot_mat << rotMat.at<double>(0, 0), rotMat.at<double>(0, 1), rotMat.at<double>(0, 2),
+        Eigen::Matrix3d C_rot_mat;
+        C_rot_mat << rotMat.at<double>(0, 0), rotMat.at<double>(0, 1), rotMat.at<double>(0, 2),
                 rotMat.at<double>(1, 0), rotMat.at<double>(1, 1), rotMat.at<double>(1, 2),
                 rotMat.at<double>(2, 0), rotMat.at<double>(2, 1), rotMat.at<double>(2, 2);
 
-        Eigen::Vector3d pnp_trans(tvec[0], tvec[1], tvec[2]);
-        ROS_WARN_STREAM("PNP DCM is \n " << rot_mat.transpose());
-        ROS_WARN_STREAM("PNP Translation is \n " << -rot_mat * pnp_trans);
-
         Eigen::Vector3d rpy;
-        reef_msgs::roll_pitch_yaw_from_rotation321(rot_mat.transpose(), rpy); //This is a C Matrix now!
+        reef_msgs::roll_pitch_yaw_from_rotation321(C_rot_mat, rpy); //This is a C Matrix now!
+        ROS_WARN_STREAM("PNP RPY \n" << rpy);
 
         pnp_average_euler +=rpy;
         pnp_average_translation.x() += tvec[0];
@@ -179,7 +176,7 @@ namespace calibration{
             Eigen::Matrix3d C_world_to_imu = (C_imu_to_camera.transpose() * C_average_world_to_camera);
             Eigen::Vector3d world_to_imu_pose = -C_world_to_imu.transpose() * (imu_to_camera_position + C_imu_to_camera.transpose() * pnp_average_translation);
 
-            Eigen::Quaterniond world_to_imu_quat(C_world_to_imu);
+            Eigen::Quaterniond world_to_imu_quat(C_world_to_imu.transpose());
             initialized_pnp = true;
 
             xHat.block<3,1>(0,0) << world_to_imu_quat.vec();
@@ -251,10 +248,6 @@ namespace calibration{
 
         state_msg.header = imu.header;
 
-        ROS_WARN_STREAM("Average Accelerations is \n" <<accSampleAverage);
-
-        ROS_WARN_STREAM("Measured Accelerations is \n" <<imu.linear_acceleration);
-
         imu.linear_acceleration.x = imu.linear_acceleration.x - accSampleAverage.x;
         imu.linear_acceleration.y = imu.linear_acceleration.y - accSampleAverage.y;
         imu.linear_acceleration.z = imu.linear_acceleration.z - accSampleAverage.z;
@@ -265,7 +258,6 @@ namespace calibration{
         accelxyz_in_body_frame << imu.linear_acceleration.x, imu.linear_acceleration.y, imu.linear_acceleration.z;
 
         nonLinearPropagation(omega_imu, accelxyz_in_body_frame);
-        ROS_WARN_STREAM("Xhat in propogartion is \n " << xHat);
 
         if(got_measurement){
             nonLinearUpdate();
@@ -296,16 +288,11 @@ namespace calibration{
             aruco_helper(aruco_corners.metric_corners[i].bottom_right, aruco_corners.pixel_corners[i].bottom_right, i, BOTTOM_RIGHT);
             aruco_helper(aruco_corners.metric_corners[i].bottom_left, aruco_corners.pixel_corners[i].bottom_left, i, BOTTOM_LEFT);
         }
-//        ROS_WARN_STREAM("Expected Measurement is \n" << expected_measurement);
-        ROS_WARN_STREAM("Expected Measurement is \n" << expected_measurement);
-        ROS_WARN_STREAM("Measurement is \n" << z);
         got_measurement = true;
     }
 
     void CameraIMUEKF::aruco_helper(ar_sys::SingleCorner metric_corner, ar_sys::SingleCorner pixel_corner,
                                      unsigned int index, unsigned int position) {
-
-        ROS_WARN_STREAM("Xhat is \n" << xHat);
 
         Eigen::Quaterniond world_to_imu_quat;
         world_to_imu_quat.vec() << xHat(0), xHat(1), xHat(2);
@@ -331,10 +318,6 @@ namespace calibration{
         zero_block.setZero();
         p_c_i_block = -1 * camera_to_imu_quad.toRotationMatrix().transpose();
 
-        ROS_WARN_STREAM("Pos block is \n" << pos_block);
-        ROS_WARN_STREAM("zero_block is \n" << zero_block);
-        ROS_WARN_STREAM("p_c_i_block is \n" << p_c_i_block);
-
         Eigen::MatrixXd partial_y_measure_p_fc(2,3);
         Eigen::MatrixXd partial_x_measure(3,21);
 
@@ -342,15 +325,10 @@ namespace calibration{
         Eigen::Vector3d feature_metric_position_camera_frame;
         feature_metric_position_camera_frame = camera_to_imu_quad.toRotationMatrix().transpose() * ( world_to_imu_quat.toRotationMatrix().transpose() * (measured_metric -  world_to_imu_position) - camera_to_imu_position);
 
-        ROS_WARN_STREAM("Metric feature is \n" << measured_metric);
-        ROS_WARN_STREAM("DCM is \n" << camera_to_imu_quad.toRotationMatrix().transpose());
-        ROS_WARN_STREAM("Metric feature in camera frame is \n" << feature_metric_position_camera_frame);
         Eigen::Vector2d feature_pixel_position_camera_frame;
 
         feature_pixel_position_camera_frame << fx * (feature_metric_position_camera_frame(0)/feature_metric_position_camera_frame(2)) + cx,
                                                 fy * (feature_metric_position_camera_frame(1)/feature_metric_position_camera_frame(2)) + cy;
-
-        ROS_WARN_STREAM("Pixel feature in camera frame is \n" << feature_pixel_position_camera_frame);
 
         expected_measurement.block<2,1>(8*index + position, 0) = feature_pixel_position_camera_frame;
         z.block<2,1>(8*index + position, 0) << pixel_corner.x, pixel_corner.y;
@@ -358,17 +336,10 @@ namespace calibration{
         q_block = camera_to_imu_quad.toRotationMatrix().transpose() * reef_msgs::skew( world_to_imu_quat.toRotationMatrix().transpose() * (measured_metric - world_to_imu_position) );
         alpha_block = reef_msgs::skew( camera_to_imu_quad.toRotationMatrix().transpose() * ( world_to_imu_quat.toRotationMatrix().transpose() * (measured_metric - world_to_imu_position) - camera_to_imu_position) );
 
-        ROS_WARN_STREAM("q block is \n" << q_block);
-        ROS_WARN_STREAM("alpha block is \n" << alpha_block);
-
         partial_y_measure_p_fc << fx, 0, -fx * feature_metric_position_camera_frame(0)/feature_metric_position_camera_frame(2),
                 0,fy, -fy * feature_metric_position_camera_frame(1)/feature_metric_position_camera_frame(2);
         partial_y_measure_p_fc = (1/feature_metric_position_camera_frame(2)) * partial_y_measure_p_fc;
         partial_x_measure << q_block, pos_block, zero_block, zero_block, zero_block, p_c_i_block, alpha_block;
-
-        ROS_WARN_STREAM("partial_y_measure_p_fc is \n" << partial_y_measure_p_fc);
-        ROS_WARN_STREAM("partial_x_measure is \n" << alpha_block);
-        ROS_WARN_STREAM("H is \n" << partial_y_measure_p_fc * partial_x_measure);
 
         H.block<2,21>(8*index + position,0)  = partial_y_measure_p_fc * partial_x_measure;
     }
