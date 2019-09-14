@@ -18,6 +18,7 @@
 #include <reef_msgs/XYZDebugEstimate.h>
 #include <ar_sys/ArucoCornerMsg.h>
 #include <ar_sys/SingleCorner.h>
+#include <camera_imu_calib/ExpectedMeasurement.h>
 
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
@@ -44,6 +45,7 @@ namespace calibration{
         ros::NodeHandle nh_private;
         ros::NodeHandle nh_;
         ros::Publisher state_publisher_;
+        ros::Publisher expect_pixel_publisher_;
 
         bool initialize;
         bool got_measurement;
@@ -73,6 +75,7 @@ namespace calibration{
 
         cv::Mat cameraMatrix, distortionCoeffs;
         camera_imu_calib::IMUCalibration state_msg;
+
 
     public:
         CameraIMUEKF();

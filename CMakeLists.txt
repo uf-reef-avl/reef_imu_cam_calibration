@@ -17,6 +17,7 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
         tf2_eigen
         ar_sys
+        message_filters
 )
 
 find_package(Eigen3 REQUIRED)
@@ -24,6 +25,7 @@ find_package(Eigen3 REQUIRED)
 add_message_files(
         FILES
         IMUCalibration.msg
+        ExpectedMeasurement.msg
 )
 
 generate_messages(
@@ -50,3 +52,9 @@ add_executable(${PROJECT_NAME}_node
 
 add_dependencies(${PROJECT_NAME}_node ${catkin_EXPORTED_TARGETS})
 target_link_libraries(${PROJECT_NAME}_node ${catkin_LIBRARIES})
+
+
+add_executable(show_res
+        src/view_expected_measurement.cpp)
+add_dependencies(show_res ${catkin_EXPORTED_TARGETS})
+target_link_libraries(show_res ${catkin_LIBRARIES})

@@ -76,6 +76,7 @@ namespace calibration{
 
         //TODO Make new message or change the message type.
         state_publisher_ = nh_.advertise<camera_imu_calib::IMUCalibration>("imu_calib_result", 1, true);
+        expect_pixel_publisher_ = nh_.advertise<camera_imu_calib::ExpectedMeasurement>("expected_measurements", 1, true);
 
         pnp_average_translation.setZero();
         pnp_average_euler.setZero();
@@ -139,10 +140,10 @@ namespace calibration{
         C_rot_mat << rotMat.at<double>(0, 0), rotMat.at<double>(0, 1), rotMat.at<double>(0, 2),
                 rotMat.at<double>(1, 0), rotMat.at<double>(1, 1), rotMat.at<double>(1, 2),
                 rotMat.at<double>(2, 0), rotMat.at<double>(2, 1), rotMat.at<double>(2, 2);
+        // ^^ This can be interpreted as the rotation matrix from the Camera to the board or the DCM of the board to the camera frame
 
         Eigen::Vector3d rpy;
         reef_msgs::roll_pitch_yaw_from_rotation321(C_rot_mat, rpy); //This is a C Matrix now!
-        ROS_WARN_STREAM("PNP RPY \n" << rpy);
 
         pnp_average_euler +=rpy;
         pnp_average_translation.x() += tvec[0];
@@ -261,7 +262,6 @@ namespace calibration{
 
         if(got_measurement){
             nonLinearUpdate();
-            ROS_WARN_STREAM("Xhat after Update is \n " << xHat);
             got_measurement = false;
         }
         publish_state();
@@ -269,8 +269,6 @@ namespace calibration{
     }
 
     void CameraIMUEKF::sensorUpdate(ar_sys::ArucoCornerMsg aruco_corners) {
-
-        ROS_WARN_STREAM("Number of markers detected \t" << aruco_corners.pixel_corners.size());
 
         if(aruco_corners.pixel_corners.size() != number_of_features/4)
             return;
@@ -288,6 +286,18 @@ namespace calibration{
             aruco_helper(aruco_corners.metric_corners[i].bottom_right, aruco_corners.pixel_corners[i].bottom_right, i, BOTTOM_RIGHT);
             aruco_helper(aruco_corners.metric_corners[i].bottom_left, aruco_corners.pixel_corners[i].bottom_left, i, BOTTOM_LEFT);
         }
+
+        camera_imu_calib::ExpectedMeasurement expected_msg;
+        expected_msg.expected_measurement.reserve(4 * aruco_corners.metric_corners.size());
+        expected_msg.pixel_measurement.reserve(4 * aruco_corners.metric_corners.size());
+
+        for(unsigned int i =0; i < 8 * aruco_corners.metric_corners.size(); i++){
+            expected_msg.expected_measurement.push_back(expected_measurement(i));
+            expected_msg.pixel_measurement.push_back(z(i));
+            expect_pixel_publisher_.publish(expected_msg);
+        }
+
+
         got_measurement = true;
     }
 
