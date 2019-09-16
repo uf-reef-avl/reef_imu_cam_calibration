@@ -1,0 +1,29 @@
+<launch>
+
+    <arg name="record_bag" default="false"/>
+    <arg name="bag_name" default="test"/>
+    <arg name="play_bag" value="true"/>
+    <arg name="run_estimator" value="true"/>
+    <arg name="display_expected_measurements" default="true"/>
+
+    <group if="$(arg play_bag)">
+        <arg name="bag_path" default="/media/prashant/Samsung_T5/ar_sys_bags/20190905_001.bag"/>
+        <node pkg="rosbag" type="play" name="player" output="screen" args="--clock --pause $(arg bag_path)"/>
+    </group>
+
+    <rosparam file="/home/prashant/calib_ws/src/camera_imu_calibration/params/estimator_param.yaml"/>
+    <node if="$(arg run_estimator)" name="camera_imu_calibration" pkg="camera_imu_calib" type="camera_imu_calib_node" output="screen">
+    </node>
+
+    <group if="$(arg display_expected_measurements)">
+        <node name="residual" pkg="camera_imu_calib" type="show_res" output="screen"/>
+        <node ns="/" pkg="image_view" type="image_view" name="image_view" output="screen">
+            <!--            <remap from="image" to="/camera/rgb/image_raw" />-->
+            <remap from="image" to="residual_image" />
+            <param name="autosize" type="bool" value="true" />
+        </node>
+    </group>
+
+    <node if="$(arg record_bag)" name="record" pkg="rosbag" type="record" args="-O $(arg bag_name) ar_single_board/corner ar_single_board/pose ar_single_board/result camera/rgb/image_raw camera/rgb/camera_info imu/data $(arg vehicle)/ned/pose_stamped tf_calib/ned/pose_stamped"/>
+
+</launch>

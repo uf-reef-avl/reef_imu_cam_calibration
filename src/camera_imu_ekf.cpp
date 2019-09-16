@@ -20,6 +20,7 @@ namespace calibration{
     {
         nh_private.param<double>("estimator_dt", dt, 0.002);
         nh_private.param<int>("number_of_features", number_of_features, 16);
+        nh_private.param<bool>("publish_expected_meas", publish_expected_meas_, true);
 
         F = Eigen::MatrixXd(21,21);
         F.setZero();
@@ -287,17 +288,19 @@ namespace calibration{
             aruco_helper(aruco_corners.metric_corners[i].bottom_left, aruco_corners.pixel_corners[i].bottom_left, i, BOTTOM_LEFT);
         }
 
-        camera_imu_calib::ExpectedMeasurement expected_msg;
-        expected_msg.expected_measurement.reserve(4 * aruco_corners.metric_corners.size());
-        expected_msg.pixel_measurement.reserve(4 * aruco_corners.metric_corners.size());
+        if(publish_expected_meas_){
+            camera_imu_calib::ExpectedMeasurement expected_msg;
+            expected_msg.header = aruco_corners.header;
+            expected_msg.expected_measurement.reserve(4 * aruco_corners.metric_corners.size());
+            expected_msg.pixel_measurement.reserve(4 * aruco_corners.metric_corners.size());
 
-        for(unsigned int i =0; i < 8 * aruco_corners.metric_corners.size(); i++){
-            expected_msg.expected_measurement.push_back(expected_measurement(i));
-            expected_msg.pixel_measurement.push_back(z(i));
+            for(unsigned int i =0; i < 8 * aruco_corners.metric_corners.size(); i++){
+                expected_msg.expected_measurement.push_back(expected_measurement(i));
+                expected_msg.pixel_measurement.push_back(z(i));
+            }
             expect_pixel_publisher_.publish(expected_msg);
+
         }
-
-
         got_measurement = true;
     }
 
