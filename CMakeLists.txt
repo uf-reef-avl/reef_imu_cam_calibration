@@ -12,7 +12,6 @@ find_package(catkin REQUIRED COMPONENTS
   nav_msgs
   reef_msgs
   roscpp
-  rosflight_msgs
   rospy
   sensor_msgs
         tf2_eigen
@@ -37,7 +36,7 @@ generate_messages(
 catkin_package(
         INCLUDE_DIRS
         LIBRARIES
-        CATKIN_DEPENDS roscpp rospy ar_sys sensor_msgs geometry_msgs rosflight_msgs sensor_msgs tf2_eigen
+        CATKIN_DEPENDS roscpp rospy ar_sys sensor_msgs geometry_msgs sensor_msgs tf2_eigen
 )
 
 include_directories(include ${catkin_INCLUDE_DIRS})

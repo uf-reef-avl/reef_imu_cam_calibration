@@ -53,7 +53,6 @@
   <build_depend>nav_msgs</build_depend>
   <build_depend>reef_msgs</build_depend>
   <build_depend>roscpp</build_depend>
-  <build_depend>rosflight_msgs</build_depend>
   <build_depend>rospy</build_depend>
   <build_depend>sensor_msgs</build_depend>
   <build_depend>tf2_eigen</build_depend>
@@ -62,7 +61,6 @@
   <build_export_depend>nav_msgs</build_export_depend>
   <build_export_depend>reef_msgs</build_export_depend>
   <build_export_depend>roscpp</build_export_depend>
-  <build_export_depend>rosflight_msgs</build_export_depend>
   <build_export_depend>rospy</build_export_depend>
   <build_export_depend>sensor_msgs</build_export_depend>
   <build_export_depend>tf2_eigen</build_export_depend>
@@ -71,7 +69,6 @@
   <exec_depend>nav_msgs</exec_depend>
   <exec_depend>reef_msgs</exec_depend>
   <exec_depend>roscpp</exec_depend>
-  <exec_depend>rosflight_msgs</exec_depend>
   <exec_depend>rospy</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>
   <exec_depend>tf2_eigen</exec_depend>
