@@ -20,6 +20,7 @@ namespace calibration{
     {
         nh_private.param<double>("estimator_dt", dt, 0.002);
         nh_private.param<int>("number_of_features", number_of_features, 16);
+        nh_private.param<bool>("publish_full_quaternion", publish_full_quaternion, false);
         nh_private.param<bool>("publish_expected_meas", publish_expected_meas_, true);
 
         F = Eigen::MatrixXd(21,21);
@@ -431,12 +432,16 @@ namespace calibration{
         correction = K * (z- expected_measurement);
 
         Eigen::Quaterniond quat_error;
+        //Let's save the correction for the quaternion attitude.
+        q_attitude_error = correction.block<3,1>(0,0);
         quat_error.vec() = 0.5 * correction.block<3,1>(0,0);
         quat_error.w() = 1;
         world_to_imu_quat = world_to_imu_quat * quat_error;
         world_to_imu_quat.normalize();
         xHat.block<4,1>(0,0) =  world_to_imu_quat.coeffs();
 
+        //Here we also save the quaterinion error. Now for the offset orientation.
+        q_offset_error = correction.block<3,1>(18,0);
         quat_error.vec() = 0.5 * correction.block<3,1>(18,0);
         quat_error.w() = 1;
         camera_to_imu_quad = camera_to_imu_quad * quat_error;
@@ -451,10 +456,18 @@ namespace calibration{
     }
 
     void CameraIMUEKF::publish_state() {
-        state_msg.world_to_imu.orientation.x = xHat(0);
-        state_msg.world_to_imu.orientation.y = xHat(1);
-        state_msg.world_to_imu.orientation.z = xHat(2);
-        state_msg.world_to_imu.orientation.w = xHat(3);
+        if(publish_full_quaternion){
+            state_msg.world_to_imu.orientation.x = xHat(0);
+            state_msg.world_to_imu.orientation.y = xHat(1);
+            state_msg.world_to_imu.orientation.z = xHat(2);
+            state_msg.world_to_imu.orientation.w = xHat(3);
+        }
+        else{
+            state_msg.world_to_imu.orientation.x = q_attitude_error(0);
+            state_msg.world_to_imu.orientation.y = q_attitude_error(1);
+            state_msg.world_to_imu.orientation.z = q_attitude_error(2);
+            state_msg.world_to_imu.orientation.w = 1.0;
+        }
 
         state_msg.world_to_imu.position.x = xHat(4);
         state_msg.world_to_imu.position.y = xHat(5);
@@ -476,15 +489,42 @@ namespace calibration{
         state_msg.imu_to_camera.position.y = xHat(17);
         state_msg.imu_to_camera.position.z = xHat(18);
 
-        state_msg.imu_to_camera.orientation.x = xHat(19);
-        state_msg.imu_to_camera.orientation.y = xHat(20);
-        state_msg.imu_to_camera.orientation.z = xHat(21);
-        state_msg.imu_to_camera.orientation.w = xHat(22);
+        if(publish_full_quaternion){
+            state_msg.imu_to_camera.orientation.x = xHat(19);
+            state_msg.imu_to_camera.orientation.y = xHat(20);
+            state_msg.imu_to_camera.orientation.z = xHat(21);
+            state_msg.imu_to_camera.orientation.w = xHat(22);
+        }
+        else{
+            state_msg.imu_to_camera.orientation.x = q_offset_error(0);
+            state_msg.imu_to_camera.orientation.y = q_offset_error(1);
+            state_msg.imu_to_camera.orientation.z = q_offset_error(2);
+            state_msg.imu_to_camera.orientation.w = 1.0;
+        }
 
         for(unsigned int i =0; i<20; i++){
+            //In this section we use the index i to acces the covariance matrix.
+
             state_msg.P[i] = P(i,i);
-            state_msg.sigma_minus[i] = xHat(i) - 3 * sqrt(P(i,i));
-            state_msg.sigma_plus[i] = xHat(i) + 3 * sqrt(P(i,i));
+            if(i<3)
+            {   //This covers i = 0,1,2
+                state_msg.sigma_minus[i] = q_attitude_error(i) - 3 * sqrt(P(i,i));
+                state_msg.sigma_plus[i] = q_attitude_error(i) + 3 * sqrt(P(i,i));
+
+            }
+            if (i >= 3 && i<=17)
+            {   //This covers i = 3,4,5,..,17
+                state_msg.sigma_minus[i] = xHat(i+1) - 3 * sqrt(P(i,i));
+                state_msg.sigma_plus[i] = xHat(i+1) + 3 * sqrt(P(i,i));
+            }
+
+            if(i >=18){
+                //This covers i = 18,19,20
+                state_msg.sigma_minus[i] = q_offset_error(i-18) - 3 * sqrt(P(i,i));
+                state_msg.sigma_plus[i] = q_offset_error(i-18) + 3 * sqrt(P(i,i));
+
+            }
+
         }
 
         state_publisher_.publish(state_msg);
