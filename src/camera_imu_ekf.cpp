@@ -4,6 +4,7 @@
 
 #include "camera_imu_calib/camera_imu_ekf.h"
 
+class IMUCalibration;
 namespace calibration{
 
     CameraIMUEKF::CameraIMUEKF() :
@@ -20,7 +21,7 @@ namespace calibration{
     {
         nh_private.param<double>("estimator_dt", dt, 0.002);
         nh_private.param<int>("number_of_features", number_of_features, 16);
-        nh_private.param<bool>("publish_full_quaternion", publish_full_quaternion, false);
+        nh_private.param<bool>("publish_full_quaternion", publish_full_quaternion, true);
         nh_private.param<bool>("publish_expected_meas", publish_expected_meas_, true);
 
         F = Eigen::MatrixXd(21,21);
@@ -66,15 +67,16 @@ namespace calibration{
         reef_msgs::importMatrixFromParamServer(nh_private, R, "R");
         reef_msgs::importMatrixFromParamServer(nh_private, betaVector, "beta");
 
-        ROS_WARN_STREAM("XHat0 is \n" << xHat0);
-        ROS_WARN_STREAM("P0 is \n" << P0);
-        ROS_WARN_STREAM("Q is \n" << Q);
-        ROS_WARN_STREAM("R is \n" << R);
-        ROS_WARN_STREAM("Beta is \n" << betaVector);
-
+        R = R*R;
+        P0 = P0*P0;
         Q = Q * dt;
 
         Estimator::initialize();
+        ROS_WARN_STREAM("XHat0 is \n" << xHat);
+        ROS_WARN_STREAM("P0 is \n" << P);
+        ROS_WARN_STREAM("Q is \n" << Q);
+        ROS_WARN_STREAM("R is \n" << R);
+        ROS_WARN_STREAM("Beta is \n" << betaVector);
 
         //TODO Make new message or change the message type.
         state_publisher_ = nh_.advertise<camera_imu_calib::IMUCalibration>("imu_calib_result", 1, true);
@@ -224,6 +226,10 @@ namespace calibration{
             accSampleAverage.y /= ACC_SAMPLE_SIZE;
             accSampleAverage.z /= ACC_SAMPLE_SIZE;
             accel_calibrated = true;
+            xHat(13) = accSampleAverage.x;
+            xHat(14) = accSampleAverage.y;
+            xHat(15) = accSampleAverage.z + 9.81;
+
         }
 
     }
@@ -394,7 +400,7 @@ namespace calibration{
         Eigen::MatrixXd true_dynamics(19,1);
         true_dynamics.setZero();
         true_dynamics.block<3,1>(0,0) = velocity_W;
-        true_dynamics.block<3,1>(3,0) = world_to_imu_quat.toRotationMatrix() * acceleration + gravity;
+        true_dynamics.block<3,1>(3,0) = world_to_imu_quat.toRotationMatrix() * acceleration - gravity;
 
         Eigen::Matrix4d Omega_matrix;
         Omega_matrix.setZero();
