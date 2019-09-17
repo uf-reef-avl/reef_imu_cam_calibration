@@ -251,9 +251,9 @@ namespace calibration{
 
         state_msg.header = imu.header;
 
-        imu.linear_acceleration.x = imu.linear_acceleration.x - accSampleAverage.x;
-        imu.linear_acceleration.y = imu.linear_acceleration.y - accSampleAverage.y;
-        imu.linear_acceleration.z = imu.linear_acceleration.z - accSampleAverage.z;
+//        imu.linear_acceleration.x = imu.linear_acceleration.x - accSampleAverage.x;
+//        imu.linear_acceleration.y = imu.linear_acceleration.y - accSampleAverage.y;
+//        imu.linear_acceleration.z = imu.linear_acceleration.z - accSampleAverage.z;
 
         Eigen::Vector3d omega_imu;
         Eigen::Vector3d accelxyz_in_body_frame;
@@ -389,10 +389,12 @@ namespace calibration{
         G.block<3,3>(9,6) = I;
         G.block<3,3>(12,9) = I;
 
+        Eigen::Vector3d gravity(0,accSampleAverage.z,0);
+
         Eigen::MatrixXd true_dynamics(19,1);
         true_dynamics.setZero();
         true_dynamics.block<3,1>(0,0) = velocity_W;
-        true_dynamics.block<3,1>(3,0) = world_to_imu_quat.toRotationMatrix() * acceleration;
+        true_dynamics.block<3,1>(3,0) = world_to_imu_quat.toRotationMatrix() * acceleration + gravity;
 
         Eigen::Matrix4d Omega_matrix;
         Omega_matrix.setZero();
