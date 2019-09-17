@@ -51,6 +51,7 @@ namespace calibration{
         bool got_measurement;
         bool accel_calibrated;
         bool initialized_pnp;
+        bool publish_full_quaternion;
 
         int accInitSampleCount;
         int cornerSampleCount;
@@ -85,6 +86,8 @@ namespace calibration{
         int fy;
         int cx;
         int cy;
+        Eigen::Vector3d q_attitude_error;
+        Eigen::Vector3d q_offset_error;
 
         bool got_camera_parameters;
 
