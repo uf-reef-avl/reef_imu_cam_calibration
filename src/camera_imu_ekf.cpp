@@ -226,9 +226,9 @@ namespace calibration{
             accSampleAverage.y /= ACC_SAMPLE_SIZE;
             accSampleAverage.z /= ACC_SAMPLE_SIZE;
             accel_calibrated = true;
-            xHat(13) = accSampleAverage.x;
-            xHat(14) = accSampleAverage.y;
-            xHat(15) = accSampleAverage.z + 9.81;
+//            xHat(13) = accSampleAverage.x;
+//            xHat(14) = accSampleAverage.y;
+//            xHat(15) = accSampleAverage.z + 9.81;
 
         }
 
