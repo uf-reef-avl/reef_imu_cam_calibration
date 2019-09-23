@@ -81,6 +81,16 @@ namespace calibration{
         bool publish_expected_meas_;
         bool enable_partial_update_;
 
+        enum StateIndicies
+        {   QX,  QY,  QZ, QW,  // Orientation (body wrt world frame)
+            PX,  PY,  PZ,      // Position (body wrt world frame)
+            U,   V,   W,      // Velocity (body frame)
+            BWX, BWY, BWZ,      // Gyro Biases
+            BAX, BAY, BAZ,      // Accel Biases
+            P_IX, P_IY, P_IZ, //Calibration Position
+            Q_IX, Q_IY, Q_IZ, Q_IW // Calibration Orientation
+        };
+
     public:
         CameraIMUEKF();
         ~CameraIMUEKF();

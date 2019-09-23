@@ -189,9 +189,9 @@ namespace calibration{
             Eigen::Quaterniond world_to_imu_quat(C_world_to_imu.transpose());
             initialized_pnp = true;
 
-            xHat.block<3,1>(0,0) << world_to_imu_quat.vec();
-            xHat(3,0) = world_to_imu_quat.w();
-            xHat.block<3,1>(4,0) << world_to_imu_pose;
+            xHat.block<3,1>(QX,QX) << world_to_imu_quat.vec();
+            xHat(QW,0) = world_to_imu_quat.w();
+            xHat.block<3,1>(PX,0) << world_to_imu_pose;
             ROS_WARN_STREAM("XHat post initialization is  \n" <<xHat);
         }
     }
@@ -231,9 +231,9 @@ namespace calibration{
             accSampleAverage.y /= ACC_SAMPLE_SIZE;
             accSampleAverage.z /= ACC_SAMPLE_SIZE;
             accel_calibrated = true;
-//            xHat(13) = accSampleAverage.x;
-//            xHat(14) = accSampleAverage.y;
-//            xHat(15) = accSampleAverage.z + 9.81;
+//            xHat(BAX) = accSampleAverage.x;
+//            xHat(BAY) = accSampleAverage.y;
+//            xHat(BAZ) = accSampleAverage.z + 9.81;
 
         }
 
@@ -319,18 +319,18 @@ namespace calibration{
                                      unsigned int index, unsigned int position) {
 
         Eigen::Quaterniond world_to_imu_quat;
-        world_to_imu_quat.vec() << xHat(0), xHat(1), xHat(2);
-        world_to_imu_quat.w() = xHat(3);
+        world_to_imu_quat.vec() << xHat(QX), xHat(QY), xHat(QZ);
+        world_to_imu_quat.w() = xHat(QW);
 
-        Eigen::Vector3d world_to_imu_position(xHat(4), xHat(5), xHat(6));
-        Eigen::Vector3d velocity_W(xHat(7), xHat(8), xHat(9));
-        Eigen::Vector3d gyro_bias(xHat(10), xHat(11) , xHat(12));
-        Eigen::Vector3d accel_bias(xHat(13), xHat(14) , xHat(15));
-        Eigen::Vector3d camera_to_imu_position(xHat(16), xHat(17), xHat(18));
+        Eigen::Vector3d world_to_imu_position(xHat(PX), xHat(PY), xHat(PZ));
+        Eigen::Vector3d velocity_W(xHat(U), xHat(V), xHat(W));
+        Eigen::Vector3d gyro_bias(xHat(BWX), xHat(BWY) , xHat(BWZ));
+        Eigen::Vector3d accel_bias(xHat(BAX), xHat(BAY) , xHat(BAZ));
+        Eigen::Vector3d camera_to_imu_position(xHat(P_IX), xHat(P_IY), xHat(P_IZ));
 
         Eigen::Quaterniond camera_to_imu_quad;
-        camera_to_imu_quad.vec() << xHat(19), xHat(20), xHat(21);
-        camera_to_imu_quad.w() = xHat(22);
+        camera_to_imu_quad.vec() << xHat(Q_IX), xHat(Q_IY), xHat(Q_IZ);
+        camera_to_imu_quad.w() = xHat(Q_IW);
 
         Eigen::Matrix3d q_block;
         Eigen::Matrix3d pos_block;
@@ -372,18 +372,18 @@ namespace calibration{
 
         // Break state into variables to make it easier to read (and write) code
         Eigen::Quaterniond world_to_imu_quat;
-        world_to_imu_quat.vec() << xHat(0), xHat(1), xHat(2);
-        world_to_imu_quat.w() = xHat(3);
+        world_to_imu_quat.vec() << xHat(QX), xHat(QY), xHat(QZ);
+        world_to_imu_quat.w() = xHat(QW);
 
-        Eigen::Vector3d world_to_imu_position(xHat(4), xHat(5), xHat(6));
-        Eigen::Vector3d velocity_W(xHat(7), xHat(8), xHat(9));
-        Eigen::Vector3d gyro_bias(xHat(10), xHat(11) , xHat(12));
-        Eigen::Vector3d accel_bias(xHat(13), xHat(14) , xHat(15));
-        Eigen::Vector3d camera_to_imu_position(xHat(16), xHat(17), xHat(18));
+        Eigen::Vector3d world_to_imu_position(xHat(PX), xHat(PY), xHat(PZ));
+        Eigen::Vector3d velocity_W(xHat(U), xHat(V), xHat(W));
+        Eigen::Vector3d gyro_bias(xHat(BWX), xHat(BWY) , xHat(BWZ));
+        Eigen::Vector3d accel_bias(xHat(BAX), xHat(BAY) , xHat(BAZ));
+        Eigen::Vector3d camera_to_imu_position(xHat(P_IX), xHat(P_IY), xHat(P_IZ));
 
         Eigen::Quaterniond camera_to_imu_quad;
-        camera_to_imu_quad.vec() << xHat(19), xHat(20), xHat(21);
-        camera_to_imu_quad.w() = xHat(22);
+        camera_to_imu_quad.vec() << xHat(Q_IX), xHat(Q_IY), xHat(Q_IZ);
+        camera_to_imu_quad.w() = xHat(Q_IW);
 
         omega = omega - gyro_bias;
         acceleration = acceleration - accel_bias;
@@ -426,18 +426,18 @@ namespace calibration{
 
         // Break state into variables to make it easier to read (and write) code
         Eigen::Quaterniond world_to_imu_quat;
-        world_to_imu_quat.vec() << xHat(0), xHat(1), xHat(2);
-        world_to_imu_quat.w() = xHat(3);
+        world_to_imu_quat.vec() << xHat(QX), xHat(QY), xHat(QZ);
+        world_to_imu_quat.w() = xHat(QW);
 
-        Eigen::Vector3d world_to_imu_position(xHat(4), xHat(5), xHat(6));
-        Eigen::Vector3d velocity_W(xHat(7), xHat(8), xHat(9));
-        Eigen::Vector3d gyro_bias(xHat(10), xHat(11) , xHat(12));
-        Eigen::Vector3d accel_bias(xHat(13), xHat(14) , xHat(15));
-        Eigen::Vector3d camera_to_imu_position(xHat(16), xHat(17), xHat(18));
+        Eigen::Vector3d world_to_imu_position(xHat(PX), xHat(PY), xHat(PZ));
+        Eigen::Vector3d velocity_W(xHat(U), xHat(V), xHat(W));
+        Eigen::Vector3d gyro_bias(xHat(BWX), xHat(BWY) , xHat(BWZ));
+        Eigen::Vector3d accel_bias(xHat(BAX), xHat(BAY) , xHat(BAZ));
+        Eigen::Vector3d camera_to_imu_position(xHat(P_IX), xHat(P_IY), xHat(P_IZ));
 
         Eigen::Quaterniond camera_to_imu_quad;
-        camera_to_imu_quad.vec() << xHat(19), xHat(20), xHat(21);
-        camera_to_imu_quad.w() = xHat(22);
+        camera_to_imu_quad.vec() << xHat(Q_IX), xHat(Q_IY), xHat(Q_IZ);
+        camera_to_imu_quad.w() = xHat(Q_IW);
 
         K = P * H.transpose() * (H * P * H.transpose() + R).inverse();
         Eigen::MatrixXd correction(21,1);
