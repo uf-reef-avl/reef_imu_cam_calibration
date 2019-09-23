@@ -17,7 +17,11 @@ namespace calibration{
     accel_calibrated(false),
     accInitSampleCount(0),
     cornerSampleCount(false),
-    fx(0),fy(0),cx(0),cy(0)
+    fx(0),fy(0),cx(0),cy(0),
+    number_of_features(16),
+    publish_full_quaternion(false),
+    publish_expected_meas_(false),
+    enable_partial_update_(false)
     {
         nh_private.param<double>("estimator_dt", dt, 0.002);
         nh_private.param<int>("number_of_features", number_of_features, 16);
@@ -55,7 +59,7 @@ namespace calibration{
         xHat = Eigen::MatrixXd(23,1);
         Q = Eigen::MatrixXd(12,12);
 
-        betaVector = Eigen::MatrixXd(23,1);
+        betaVector = Eigen::MatrixXd(21,1);
 
         R = Eigen::MatrixXd(2 * number_of_features, 2 * number_of_features);
 
@@ -439,7 +443,8 @@ namespace calibration{
         Eigen::MatrixXd correction(21,1);
 
         if(enable_partial_update_)
-            correction = (Eigen::MatrixXd::Identity(betaVector.rows(), betaVector.rows()) - gammas) * K *(z- expected_measurement);
+            correction = (Eigen::MatrixXd::Identity(21, 21) - gammas) * K *
+                         (z - expected_measurement);
         else
             correction = K * (z- expected_measurement);
 
@@ -467,7 +472,6 @@ namespace calibration{
             Eigen::MatrixXd P_prior;
             P_prior = P; //store the prior for partial update
             P = ( Eigen::MatrixXd::Identity(21,21) - K * H ) * P;
-
             P = gammas * (P_prior - P) * gammas + P;
         } else
             P = ( Eigen::MatrixXd::Identity(21,21) - K * H ) * P;
