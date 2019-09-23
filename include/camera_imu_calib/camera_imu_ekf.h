@@ -77,6 +77,9 @@ namespace calibration{
         cv::Mat cameraMatrix, distortionCoeffs;
         camera_imu_calib::IMUCalibration state_msg;
 
+        int number_of_features;
+        bool publish_expected_meas_;
+        bool enable_partial_update_;
 
     public:
         CameraIMUEKF();

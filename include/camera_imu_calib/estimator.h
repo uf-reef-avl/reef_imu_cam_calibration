@@ -40,8 +40,6 @@ namespace reef_estimator
 
         //Timestep for discrete integration
         double dt;
-        int number_of_features;
-        bool publish_expected_meas_;
 
         Estimator();
         ~Estimator();

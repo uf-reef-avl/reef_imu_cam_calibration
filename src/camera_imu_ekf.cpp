@@ -23,6 +23,7 @@ namespace calibration{
         nh_private.param<int>("number_of_features", number_of_features, 16);
         nh_private.param<bool>("publish_full_quaternion", publish_full_quaternion, true);
         nh_private.param<bool>("publish_expected_meas", publish_expected_meas_, true);
+        nh_private.param<bool>("enable_partial_update", enable_partial_update_, true);
 
         F = Eigen::MatrixXd(21,21);
         F.setZero();
@@ -243,7 +244,6 @@ namespace calibration{
 
 
         if(!accel_calibrated){
-            // TODO: Initialize the xhat using PNP
             initializeAcc(imu.linear_acceleration);
             last_time_stamp = imu.header.stamp.toSec();
             return;
@@ -437,7 +437,11 @@ namespace calibration{
 
         K = P * H.transpose() * (H * P * H.transpose() + R).inverse();
         Eigen::MatrixXd correction(21,1);
-        correction = K * (z- expected_measurement);
+
+        if(enable_partial_update_)
+            correction = (Eigen::MatrixXd::Identity(betaVector.rows(), betaVector.rows()) - gammas) * K *(z- expected_measurement);
+        else
+            correction = K * (z- expected_measurement);
 
         Eigen::Quaterniond quat_error;
         //Let's save the correction for the quaternion attitude.
@@ -458,8 +462,15 @@ namespace calibration{
 
         xHat.block<15,1>(4,0) = xHat.block<15,1>(4,0) + correction.block<15,1>(3,0);
 
-        P = ( Eigen::MatrixXd::Identity(21,21) - K * H ) * P;
+        if(enable_partial_update_)
+        {
+            Eigen::MatrixXd P_prior;
+            P_prior = P; //store the prior for partial update
+            P = ( Eigen::MatrixXd::Identity(21,21) - K * H ) * P;
 
+            P = gammas * (P_prior - P) * gammas + P;
+        } else
+            P = ( Eigen::MatrixXd::Identity(21,21) - K * H ) * P;
 
     }
 
