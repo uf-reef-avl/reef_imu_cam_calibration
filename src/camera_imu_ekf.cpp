@@ -25,7 +25,7 @@ namespace calibration{
     {
         nh_private.param<double>("estimator_dt", dt, 0.002);
         nh_private.param<int>("number_of_features", number_of_features, 16);
-        nh_private.param<bool>("publish_full_quaternion", publish_full_quaternion, true);
+        nh_private.param<bool>("publish_full_quaternion", publish_full_quaternion, false);
         nh_private.param<bool>("publish_expected_meas", publish_expected_meas_, true);
         nh_private.param<bool>("enable_partial_update", enable_partial_update_, true);
 
@@ -231,9 +231,7 @@ namespace calibration{
             accSampleAverage.y /= ACC_SAMPLE_SIZE;
             accSampleAverage.z /= ACC_SAMPLE_SIZE;
             accel_calibrated = true;
-//            xHat(BAX) = accSampleAverage.x;
-//            xHat(BAY) = accSampleAverage.y;
-//            xHat(BAZ) = accSampleAverage.z + 9.81;
+
 
         }
 
@@ -261,9 +259,6 @@ namespace calibration{
 
         state_msg.header = imu.header;
 
-//        imu.linear_acceleration.x = imu.linear_acceleration.x - accSampleAverage.x;
-//        imu.linear_acceleration.y = imu.linear_acceleration.y - accSampleAverage.y;
-//        imu.linear_acceleration.z = imu.linear_acceleration.z - accSampleAverage.z;
 
         Eigen::Vector3d omega_imu;
         Eigen::Vector3d accelxyz_in_body_frame;
