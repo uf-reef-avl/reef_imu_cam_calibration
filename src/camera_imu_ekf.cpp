@@ -241,13 +241,15 @@ namespace calibration{
             gyroSampleAverage.z /= ACC_SAMPLE_SIZE;
 
             accel_calibrated = true;
-            xHat(BAX,0) = accSampleAverage.x;
-            xHat(BAY,0) = accSampleAverage.y;
+//            xHat(BAX,0) = accSampleAverage.x;
+//            xHat(BAY,0) = accSampleAverage.y;
             xHat(BWX, 0) = gyroSampleAverage.x;
             xHat(BWY, 0) = gyroSampleAverage.y;
             xHat(BWZ, 0) = gyroSampleAverage.z;
-            ROS_WARN_STREAM("XHat post IMU initialization is  \n" <<xHat);
-            ROS_WARN_STREAM("Gravity is  \n" <<accSampleAverage.z);
+//            ROS_WARN_STREAM("XHat post IMU initialization is  \n" <<xHat);
+            ROS_WARN_STREAM("Gravity is  \n" <<getVectorMagnitude(accSampleAverage.x,accSampleAverage.y,accSampleAverage.z));
+            ROS_WARN_STREAM("Accel components are  \n" <<accSampleAverage);
+
         }
 
     }
