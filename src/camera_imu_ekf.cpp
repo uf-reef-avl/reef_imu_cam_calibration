@@ -218,11 +218,16 @@ namespace calibration{
         }
     }
 
-    void CameraIMUEKF::initializeAcc(geometry_msgs::Vector3 acc) {
+    void CameraIMUEKF::initializeAcc(geometry_msgs::Vector3 acc, geometry_msgs::Vector3 gyro) {
 
         accSampleAverage.x += acc.x;
         accSampleAverage.y += acc.y;
         accSampleAverage.z += acc.z;
+
+        gyroSampleAverage.x += gyro.x;
+        gyroSampleAverage.y += gyro.y;
+        gyroSampleAverage.z += gyro.z;
+
         accInitSampleCount++;
 
         if (accInitSampleCount == ACC_SAMPLE_SIZE){
@@ -230,9 +235,19 @@ namespace calibration{
             accSampleAverage.x /= ACC_SAMPLE_SIZE;
             accSampleAverage.y /= ACC_SAMPLE_SIZE;
             accSampleAverage.z /= ACC_SAMPLE_SIZE;
+
+            gyroSampleAverage.x /= ACC_SAMPLE_SIZE;
+            gyroSampleAverage.y /= ACC_SAMPLE_SIZE;
+            gyroSampleAverage.z /= ACC_SAMPLE_SIZE;
+
             accel_calibrated = true;
-
-
+            xHat(BAX,0) = accSampleAverage.x;
+            xHat(BAY,0) = accSampleAverage.y;
+            xHat(BWX, 0) = gyroSampleAverage.x;
+            xHat(BWY, 0) = gyroSampleAverage.y;
+            xHat(BWZ, 0) = gyroSampleAverage.z;
+            ROS_WARN_STREAM("XHat post IMU initialization is  \n" <<xHat);
+            ROS_WARN_STREAM("Gravity is  \n" <<accSampleAverage.z);
         }
 
     }
@@ -246,17 +261,16 @@ namespace calibration{
 
 
         if(!accel_calibrated){
-            initializeAcc(imu.linear_acceleration);
+            initializeAcc(imu.linear_acceleration, imu.angular_velocity);
             last_time_stamp = imu.header.stamp.toSec();
             return;
         }
 
-        dt = imu.header.stamp.toSec() - last_time_stamp;
-        last_time_stamp = imu.header.stamp.toSec();
-
         if(!initialized_pnp)
             return;
 
+        dt = imu.header.stamp.toSec() - last_time_stamp;
+        last_time_stamp = imu.header.stamp.toSec();
         state_msg.header = imu.header;
 
 
