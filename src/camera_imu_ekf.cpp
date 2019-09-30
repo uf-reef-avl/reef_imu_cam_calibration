@@ -241,12 +241,13 @@ namespace calibration{
             gyroSampleAverage.z /= ACC_SAMPLE_SIZE;
 
             accel_calibrated = true;
-//            xHat(BAX,0) = accSampleAverage.x;
-//            xHat(BAY,0) = accSampleAverage.y;
+
+            xHat(BAX,0) = accSampleAverage.x;
+            xHat(BAY,0) = accSampleAverage.y;
             xHat(BWX, 0) = gyroSampleAverage.x;
             xHat(BWY, 0) = gyroSampleAverage.y;
             xHat(BWZ, 0) = gyroSampleAverage.z;
-//            ROS_WARN_STREAM("XHat post IMU initialization is  \n" <<xHat);
+            ROS_WARN_STREAM("XHat post IMU initialization is  \n" <<xHat);
             ROS_WARN_STREAM("Gravity is  \n" <<getVectorMagnitude(accSampleAverage.x,accSampleAverage.y,accSampleAverage.z));
             ROS_WARN_STREAM("Accel components are  \n" <<accSampleAverage);
 
@@ -410,12 +411,12 @@ namespace calibration{
         G.block<3,3>(9,6) = I;
         G.block<3,3>(12,9) = I;
 
-        Eigen::Vector3d gravity(0,accSampleAverage.z,0);
+        Eigen::Vector3d gravity(0,getVectorMagnitude(accSampleAverage.x,accSampleAverage.y,accSampleAverage.z),0);
 
         Eigen::MatrixXd true_dynamics(19,1);
         true_dynamics.setZero();
         true_dynamics.block<3,1>(0,0) = velocity_W;
-        true_dynamics.block<3,1>(3,0) = world_to_imu_quat.toRotationMatrix() * acceleration - gravity;
+        true_dynamics.block<3,1>(3,0) = world_to_imu_quat.toRotationMatrix() * acceleration + gravity;
 
         Eigen::Matrix4d Omega_matrix;
         Omega_matrix.setZero();

@@ -34,8 +34,8 @@
 #define BOTTOM_LEFT 4
 #define BOTTOM_RIGHT 6
 
-#define ACC_SAMPLE_SIZE 500
-#define CORNER_SAMPLE_SIZE 20
+#define ACC_SAMPLE_SIZE 2000
+#define CORNER_SAMPLE_SIZE 100
 
 
 namespace calibration{
