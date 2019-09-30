@@ -59,6 +59,7 @@ namespace calibration{
         double last_time_stamp;
 
         geometry_msgs::Vector3 accSampleAverage;
+        geometry_msgs::Vector3 gyroSampleAverage;
 
         Eigen::MatrixXd expected_measurement;
 
@@ -68,7 +69,7 @@ namespace calibration{
         void nonLinearPropagation(Eigen::Vector3d omega, Eigen::Vector3d acceleration);
         void nonLinearUpdate();
         void aruco_helper(ar_sys::SingleCorner metric_corner, ar_sys::SingleCorner pixel_corner, unsigned int index, unsigned int position);
-        void initializeAcc(geometry_msgs::Vector3 acc);
+        void initializeAcc(geometry_msgs::Vector3 acc, geometry_msgs::Vector3 gyro);
         void initializePNP(ar_sys::ArucoCornerMsg aruco_corners);
         void getCamParams(const sensor_msgs::CameraInfo& cam_info);
 
