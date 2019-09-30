@@ -25,7 +25,7 @@ namespace calibration{
     {
         nh_private.param<double>("estimator_dt", dt, 0.002);
         nh_private.param<int>("number_of_features", number_of_features, 16);
-        nh_private.param<bool>("publish_full_quaternion", publish_full_quaternion, false);
+        nh_private.param<bool>("publish_full_quaternion", publish_full_quaternion, true);
         nh_private.param<bool>("publish_expected_meas", publish_expected_meas_, true);
         nh_private.param<bool>("enable_partial_update", enable_partial_update_, true);
 
