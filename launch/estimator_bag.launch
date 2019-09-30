@@ -8,7 +8,7 @@
     <arg name="display_expected_measurements" default="true"/>
 
     <group if="$(arg play_bag)">
-        <arg name="bag_path" default="/media/prashant/Samsung_T5/ar_sys_bags/20190918_001.bag"/>
+        <arg name="bag_path" default="/media/prashant/Samsung_T5/ar_sys_bags/20190930_002.bag"/>
         <node pkg="rosbag" type="play" name="player" output="screen" args="--clock --pause $(arg bag_path)"/>
     </group>
 
