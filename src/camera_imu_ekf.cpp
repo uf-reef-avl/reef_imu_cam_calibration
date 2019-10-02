@@ -28,6 +28,7 @@ namespace calibration{
         nh_private.param<bool>("publish_full_quaternion", publish_full_quaternion, true);
         nh_private.param<bool>("publish_expected_meas", publish_expected_meas_, true);
         nh_private.param<bool>("enable_partial_update", enable_partial_update_, true);
+        nh_private.param<bool>("enable_update", enable_update, true);
 
         F = Eigen::MatrixXd(21,21);
         F.setZero();
@@ -66,15 +67,25 @@ namespace calibration{
         I = Eigen::MatrixXd(3,3);
         I.setIdentity();
 
+        R_std = Eigen::MatrixXd(1,1);
+
         reef_msgs::importMatrixFromParamServer(nh_private, xHat0, "xHat0");
         reef_msgs::importMatrixFromParamServer(nh_private, P0, "P0");
         reef_msgs::importMatrixFromParamServer(nh_private, Q, "Q");
-        reef_msgs::importMatrixFromParamServer(nh_private, R, "R");
+        reef_msgs::importMatrixFromParamServer(nh_private, R_std, "R_std");
         reef_msgs::importMatrixFromParamServer(nh_private, betaVector, "beta");
 
+        double R_std_float; // Set to 1 as default.
+        R_std_float = R_std(0,0);
+        ROS_INFO_STREAM("hI");
+        ROS_INFO_STREAM("R_std_float");
+        ROS_INFO_STREAM(R_std_float);
+
+        R = R_std_float*R.setIdentity();
+
         R = R*R;
-        P0 = P0*P0;
-        Q = Q * dt;
+//        P0 = P0*P0;
+//        Q = Q * dt;
 
         Estimator::initialize();
         ROS_WARN_STREAM("XHat0 is \n" << xHat);
@@ -174,10 +185,10 @@ namespace calibration{
 
 
             Eigen::Quaterniond imu_to_camera_quat;
-            imu_to_camera_quat.vec() << xHat(19), xHat(20), xHat(21);
-            imu_to_camera_quat.w() = xHat(22);
+            imu_to_camera_quat.vec() << xHat(Q_IX), xHat(Q_IY), xHat(Q_IZ);
+            imu_to_camera_quat.w() = xHat(Q_IW);
 
-            Eigen::Vector3d imu_to_camera_position(xHat(16), xHat(17), xHat(18));
+            Eigen::Vector3d imu_to_camera_position(xHat(P_IX), xHat(P_IY), xHat(P_IZ));
 
             Eigen::Matrix3d C_average_world_to_camera;
             C_average_world_to_camera = reef_msgs::DCM_from_Euler321(pnp_average_euler);
@@ -189,7 +200,15 @@ namespace calibration{
             Eigen::Quaterniond world_to_imu_quat(C_world_to_imu.transpose());
             initialized_pnp = true;
 
-            xHat.block<3,1>(QX,QX) << world_to_imu_quat.vec();
+            //Block to overwrite PNP
+            world_to_imu_quat.vec() << -0.508,-0.3995,-0.502;
+            world_to_imu_quat.w() = 0.575;
+            world_to_imu_quat.normalize();
+            world_to_imu_pose << -0.186069599037, -0.0483139174716, -2.25986337753;
+
+
+
+            xHat.block<3,1>(QX,0) << world_to_imu_quat.vec();
             xHat(QW,0) = world_to_imu_quat.w();
             xHat.block<3,1>(PX,0) << world_to_imu_pose;
             ROS_WARN_STREAM("XHat post initialization is  \n" <<xHat);
@@ -285,7 +304,10 @@ namespace calibration{
         nonLinearPropagation(omega_imu, accelxyz_in_body_frame);
 
         if(got_measurement){
-            nonLinearUpdate();
+            if(enable_update){
+
+                nonLinearUpdate();
+            }
             got_measurement = false;
         }
         publish_state();
@@ -309,6 +331,7 @@ namespace calibration{
             aruco_helper(aruco_corners.metric_corners[i].top_right, aruco_corners.pixel_corners[i].top_right, i, TOP_RIGHT);
             aruco_helper(aruco_corners.metric_corners[i].bottom_right, aruco_corners.pixel_corners[i].bottom_right, i, BOTTOM_RIGHT);
             aruco_helper(aruco_corners.metric_corners[i].bottom_left, aruco_corners.pixel_corners[i].bottom_left, i, BOTTOM_LEFT);
+//            ROS_WARN_STREAM(i);
         }
 
         if(publish_expected_meas_){
@@ -338,11 +361,11 @@ namespace calibration{
         Eigen::Vector3d velocity_W(xHat(U), xHat(V), xHat(W));
         Eigen::Vector3d gyro_bias(xHat(BWX), xHat(BWY) , xHat(BWZ));
         Eigen::Vector3d accel_bias(xHat(BAX), xHat(BAY) , xHat(BAZ));
-        Eigen::Vector3d camera_to_imu_position(xHat(P_IX), xHat(P_IY), xHat(P_IZ));
+        Eigen::Vector3d position_camera_in_imu_frame(xHat(P_IX), xHat(P_IY), xHat(P_IZ));
 
-        Eigen::Quaterniond camera_to_imu_quad;
-        camera_to_imu_quad.vec() << xHat(Q_IX), xHat(Q_IY), xHat(Q_IZ);
-        camera_to_imu_quad.w() = xHat(Q_IW);
+        Eigen::Quaterniond imu_to_camera_quat;
+        imu_to_camera_quat.vec() << xHat(Q_IX), xHat(Q_IY), xHat(Q_IZ);
+        imu_to_camera_quat.w() = xHat(Q_IW);
 
         Eigen::Matrix3d q_block;
         Eigen::Matrix3d pos_block;
@@ -350,31 +373,31 @@ namespace calibration{
         Eigen::Matrix3d p_c_i_block;
         Eigen::Matrix3d alpha_block;
 
-        pos_block = -1 * camera_to_imu_quad.toRotationMatrix().transpose() * world_to_imu_quat.toRotationMatrix().transpose();
+        pos_block = -1 * imu_to_camera_quat.toRotationMatrix().transpose() * world_to_imu_quat.toRotationMatrix().transpose();
         zero_block.setZero();
-        p_c_i_block = -1 * camera_to_imu_quad.toRotationMatrix().transpose();
+        p_c_i_block = -1 * imu_to_camera_quat.toRotationMatrix().transpose();
 
         Eigen::MatrixXd partial_y_measure_p_fc(2,3);
         Eigen::MatrixXd partial_x_measure(3,21);
 
         Eigen::Vector3d measured_metric(metric_corner.x, metric_corner.y, metric_corner.z);
-        Eigen::Vector3d feature_metric_position_camera_frame;
-        feature_metric_position_camera_frame = camera_to_imu_quad.toRotationMatrix().transpose() * ( world_to_imu_quat.toRotationMatrix().transpose() * (measured_metric -  world_to_imu_position) - camera_to_imu_position);
+        Eigen::Vector3d h_hat;
+        h_hat = imu_to_camera_quat.toRotationMatrix().transpose() * ( world_to_imu_quat.toRotationMatrix().transpose() * (measured_metric -  world_to_imu_position) - position_camera_in_imu_frame);
 
         Eigen::Vector2d feature_pixel_position_camera_frame;
 
-        feature_pixel_position_camera_frame << fx * (feature_metric_position_camera_frame(0)/feature_metric_position_camera_frame(2)) + cx,
-                                                fy * (feature_metric_position_camera_frame(1)/feature_metric_position_camera_frame(2)) + cy;
+        feature_pixel_position_camera_frame << fx * (h_hat(0)/h_hat(2)) + cx,
+                                                fy * (h_hat(1)/h_hat(2)) + cy;
 
         expected_measurement.block<2,1>(8*index + position, 0) = feature_pixel_position_camera_frame;
         z.block<2,1>(8*index + position, 0) << pixel_corner.x, pixel_corner.y;
 
-        q_block = camera_to_imu_quad.toRotationMatrix().transpose() * reef_msgs::skew( world_to_imu_quat.toRotationMatrix().transpose() * (measured_metric - world_to_imu_position) );
-        alpha_block = reef_msgs::skew( camera_to_imu_quad.toRotationMatrix().transpose() * ( world_to_imu_quat.toRotationMatrix().transpose() * (measured_metric - world_to_imu_position) - camera_to_imu_position) );
+        q_block = imu_to_camera_quat.toRotationMatrix().transpose() * reef_msgs::skew( world_to_imu_quat.toRotationMatrix().transpose() * (measured_metric - world_to_imu_position) );
+        alpha_block = reef_msgs::skew( imu_to_camera_quat.toRotationMatrix().transpose() * ( world_to_imu_quat.toRotationMatrix().transpose() * (measured_metric - world_to_imu_position) - position_camera_in_imu_frame) );
 
-        partial_y_measure_p_fc << fx, 0, -fx * feature_metric_position_camera_frame(0)/feature_metric_position_camera_frame(2),
-                0,fy, -fy * feature_metric_position_camera_frame(1)/feature_metric_position_camera_frame(2);
-        partial_y_measure_p_fc = (1/feature_metric_position_camera_frame(2)) * partial_y_measure_p_fc;
+        partial_y_measure_p_fc << fx, 0, -fx * h_hat(0)/h_hat(2),
+                                  0,fy, -fy * h_hat(1)/h_hat(2);
+        partial_y_measure_p_fc = (1./h_hat(2)) * partial_y_measure_p_fc;
         partial_x_measure << q_block, pos_block, zero_block, zero_block, zero_block, p_c_i_block, alpha_block;
 
         H.block<2,21>(8*index + position,0)  = partial_y_measure_p_fc * partial_x_measure;
@@ -391,42 +414,60 @@ namespace calibration{
         Eigen::Vector3d velocity_W(xHat(U), xHat(V), xHat(W));
         Eigen::Vector3d gyro_bias(xHat(BWX), xHat(BWY) , xHat(BWZ));
         Eigen::Vector3d accel_bias(xHat(BAX), xHat(BAY) , xHat(BAZ));
-        Eigen::Vector3d camera_to_imu_position(xHat(P_IX), xHat(P_IY), xHat(P_IZ));
+        Eigen::Vector3d position_camera_in_imu_frame(xHat(P_IX), xHat(P_IY), xHat(P_IZ));
 
-        Eigen::Quaterniond camera_to_imu_quad;
-        camera_to_imu_quad.vec() << xHat(Q_IX), xHat(Q_IY), xHat(Q_IZ);
-        camera_to_imu_quad.w() = xHat(Q_IW);
+        Eigen::Quaterniond imu_to_camera_quat;
+        imu_to_camera_quat.vec() << xHat(Q_IX), xHat(Q_IY), xHat(Q_IZ);
+        imu_to_camera_quat.w() = xHat(Q_IW);
 
         omega = omega - gyro_bias;
         acceleration = acceleration - accel_bias;
 
+        F.setZero();
         F.topLeftCorner<3,3>() = -reef_msgs::skew(omega);
         F.block<3,3>(0,9) = -I;
         F.block<3,3>(3,6) = I;
-        F.block<3,3>(6,0) = -1 * world_to_imu_quat.toRotationMatrix() * reef_msgs::skew(acceleration);
+        F.block<3,3>(6,0) = -1 * (world_to_imu_quat.toRotationMatrix() * reef_msgs::skew(acceleration));
         F.block<3,3>(6,12)  = -1 * world_to_imu_quat.toRotationMatrix();
 
+        G.setZero();
         G.topLeftCorner<3,3>() = -I;
-        G.block<3,3>(6,3) = -1 * world_to_imu_quat.toRotationMatrix();
+        G.block<3,3>(6,3) = -1 * (world_to_imu_quat.toRotationMatrix());
         G.block<3,3>(9,6) = I;
         G.block<3,3>(12,9) = I;
 
-        Eigen::Vector3d gravity(0,getVectorMagnitude(accSampleAverage.x,accSampleAverage.y,accSampleAverage.z),0);
+        Eigen::Vector3d gravity(0,0,getVectorMagnitude(accSampleAverage.x,accSampleAverage.y,accSampleAverage.z));
+
+        //Block to correct gravity by takin into account the rotation of the board;
+        Eigen::Vector3d corrected_gravity;
+        Eigen::Matrix3d C_from_optitrack_to_board;
+        Eigen::Quaterniond q_optitrack_to_board;
+        q_optitrack_to_board.vec() <<-0.584485290473,-0.318439720992,-0.372926204145;
+        q_optitrack_to_board.w() = -0.646451232648;
+        C_from_optitrack_to_board = q_optitrack_to_board.toRotationMatrix().transpose();
+
+        corrected_gravity = C_from_optitrack_to_board*gravity;
+//        ROS_WARN_STREAM("corrected G");
+//        ROS_WARN_STREAM(corrected_gravity);
+//        ROS_WARN_STREAM("measured G");
+//        ROS_WARN_STREAM(world_to_imu_quat.toRotationMatrix() * acceleration);
+         //End of block to correct gravity
+
 
         Eigen::MatrixXd true_dynamics(19,1);
         true_dynamics.setZero();
         true_dynamics.block<3,1>(0,0) = velocity_W;
-        true_dynamics.block<3,1>(3,0) = world_to_imu_quat.toRotationMatrix() * acceleration + gravity;
+        true_dynamics.block<3,1>(3,0) = world_to_imu_quat.toRotationMatrix() * acceleration + corrected_gravity;
 
         Eigen::Matrix4d Omega_matrix;
         Omega_matrix.setZero();
-        Omega_matrix.topLeftCorner<3,3>() = -reef_msgs::skew(omega);
+        Omega_matrix.topLeftCorner<3,3>() = -1*(reef_msgs::skew(omega));
         Omega_matrix.block<3,1>(0,3) = omega;
         Omega_matrix.block<1,3>(3,0) = -omega.transpose();
 
 
         world_to_imu_quat = (Eigen::Matrix4d::Identity() + 0.5 * dt * Omega_matrix) * world_to_imu_quat.coeffs() ;
-        world_to_imu_quat.normalize();
+//        world_to_imu_quat.normalize();
 
         xHat.block<19,1>(4,0) = xHat.block<19,1>(4,0) + dt * true_dynamics;
         xHat.block<4,1>(0,0) =  world_to_imu_quat.coeffs();
@@ -445,18 +486,17 @@ namespace calibration{
         Eigen::Vector3d velocity_W(xHat(U), xHat(V), xHat(W));
         Eigen::Vector3d gyro_bias(xHat(BWX), xHat(BWY) , xHat(BWZ));
         Eigen::Vector3d accel_bias(xHat(BAX), xHat(BAY) , xHat(BAZ));
-        Eigen::Vector3d camera_to_imu_position(xHat(P_IX), xHat(P_IY), xHat(P_IZ));
+        Eigen::Vector3d position_camera_in_imu_frame(xHat(P_IX), xHat(P_IY), xHat(P_IZ));
 
-        Eigen::Quaterniond camera_to_imu_quad;
-        camera_to_imu_quad.vec() << xHat(Q_IX), xHat(Q_IY), xHat(Q_IZ);
-        camera_to_imu_quad.w() = xHat(Q_IW);
+        Eigen::Quaterniond imu_to_camera_quat;
+        imu_to_camera_quat.vec() << xHat(Q_IX), xHat(Q_IY), xHat(Q_IZ);
+        imu_to_camera_quat.w() = xHat(Q_IW);
 
         K = P * H.transpose() * (H * P * H.transpose() + R).inverse();
         Eigen::MatrixXd correction(21,1);
 
         if(enable_partial_update_)
-            correction = (Eigen::MatrixXd::Identity(21, 21) - gammas) * K *
-                         (z - expected_measurement);
+            correction = (Eigen::MatrixXd::Identity(21, 21) - gammas) * K * (z - expected_measurement);
         else
             correction = K * (z- expected_measurement);
 
@@ -473,9 +513,9 @@ namespace calibration{
         q_offset_error = correction.block<3,1>(18,0);
         quat_error.vec() = 0.5 * correction.block<3,1>(18,0);
         quat_error.w() = 1;
-        camera_to_imu_quad = camera_to_imu_quad * quat_error;
-        camera_to_imu_quad.normalize();
-        xHat.block<4,1>(19,0) =  camera_to_imu_quad.coeffs();
+        imu_to_camera_quat = imu_to_camera_quat * quat_error;
+        imu_to_camera_quat.normalize();
+        xHat.block<4,1>(19,0) =  imu_to_camera_quat.coeffs();
 
         xHat.block<15,1>(4,0) = xHat.block<15,1>(4,0) + correction.block<15,1>(3,0);
 

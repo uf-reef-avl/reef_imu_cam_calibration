@@ -24,6 +24,7 @@ namespace reef_estimator
         Eigen::MatrixXd H;
         Eigen::MatrixXd h;
         Eigen::MatrixXd R;
+        Eigen::MatrixXd R_std;
         Eigen::MatrixXd Q;
 
         Eigen::MatrixXd P0forFlying;

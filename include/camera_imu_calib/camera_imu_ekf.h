@@ -31,8 +31,8 @@
 
 #define TOP_LEFT 0
 #define TOP_RIGHT 2
-#define BOTTOM_LEFT 4
-#define BOTTOM_RIGHT 6
+#define BOTTOM_RIGHT 4
+#define BOTTOM_LEFT 6
 
 #define ACC_SAMPLE_SIZE 2000
 #define CORNER_SAMPLE_SIZE 100
@@ -81,6 +81,7 @@ namespace calibration{
         int number_of_features;
         bool publish_expected_meas_;
         bool enable_partial_update_;
+        bool enable_update;
 
         enum StateIndicies
         {   QX,  QY,  QZ, QW,  // Orientation (body wrt world frame)

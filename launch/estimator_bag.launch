@@ -18,6 +18,8 @@
 
     <rosparam file="$(find camera_imu_calib)/params/estimator_param.yaml"/>
     <node if="$(arg run_estimator)" name="camera_imu_calibration" pkg="camera_imu_calib" type="camera_imu_calib_node" output="screen">
+        <param name="enable_update" type="bool" value="false" />
+
     </node>
 
     <group if="$(arg display_expected_measurements)">
