@@ -203,7 +203,7 @@ namespace calibration{
                 //Block to overwrite PNP
                 world_to_imu_quat.vec() << -0.508, -0.3995, -0.502;
                 world_to_imu_quat.w() = 0.575;
-                world_to_imu_quat.normalize();
+//                world_to_imu_quat.normalize();
                 world_to_imu_pose << -0.186069599037, -0.0483139174716, -2.25986337753;
 
 
@@ -262,8 +262,8 @@ namespace calibration{
 
             accel_calibrated = true;
 
-            xHat(BAX,0) = accSampleAverage.x;
-            xHat(BAY,0) = accSampleAverage.y;
+//            xHat(BAX,0) = accSampleAverage.x;
+//            xHat(BAY,0) = accSampleAverage.y;
             xHat(BWX, 0) = gyroSampleAverage.x;
             xHat(BWY, 0) = gyroSampleAverage.y;
             xHat(BWZ, 0) = gyroSampleAverage.z;
@@ -523,7 +523,8 @@ namespace calibration{
         q_attitude_error = correction.block<3,1>(0,0);
         quat_error.vec() = 0.5 * correction.block<3,1>(0,0);
         quat_error.w() = 1;
-        world_to_imu_quat = world_to_imu_quat * quat_error;
+//        world_to_imu_quat = world_to_imu_quat * quat_error;
+        world_to_imu_quat = reef_msgs::quatMult(quat_error , world_to_imu_quat) ;
         world_to_imu_quat.normalize();
         xHat.block<4,1>(0,0) =  world_to_imu_quat.coeffs();
 
@@ -531,7 +532,8 @@ namespace calibration{
         q_offset_error = correction.block<3,1>(18,0);
         quat_error.vec() = 0.5 * correction.block<3,1>(18,0);
         quat_error.w() = 1;
-        imu_to_camera_quat = imu_to_camera_quat * quat_error;
+//        imu_to_camera_quat = imu_to_camera_quat * quat_error;
+        imu_to_camera_quat =  reef_msgs::quatMult(quat_error , imu_to_camera_quat );
         imu_to_camera_quat.normalize();
         xHat.block<4,1>(19,0) =  imu_to_camera_quat.coeffs();
 
