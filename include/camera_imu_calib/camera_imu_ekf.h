@@ -52,6 +52,7 @@ namespace calibration{
         bool accel_calibrated;
         bool initialized_pnp;
         bool publish_full_quaternion;
+        bool enable_update;
 
         int accInitSampleCount;
         int cornerSampleCount;
@@ -81,7 +82,6 @@ namespace calibration{
         int number_of_features;
         bool publish_expected_meas_;
         bool enable_partial_update_;
-        bool enable_update;
 
         enum StateIndicies
         {   QX,  QY,  QZ, QW,  // Orientation (body wrt world frame)

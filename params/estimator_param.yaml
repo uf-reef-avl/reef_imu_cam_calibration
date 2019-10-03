@@ -14,13 +14,13 @@
 #       0.005, 0.005, 0.005,  #Bias Accel
 #       0.05, 0.05, 0.05,     #Arm
 #       0.02, 0.02, 0.02],  #Offset Attitude
-  P0: [0.0002, 0.0002, 0.0002, #Attitude
+  P0: [0.002, 0.002, 0.002, #Attitude
        0.0001, 0.0001, 0.0001,    #Position
        0.01, 0.01, 0.01, #Velocity
        0.00001, 0.00001, 0.00001,  #Bias Gyro
-       0.05, 0.05, 0.05,  #Bias Accel
+       0.01, 0.01, 0.01,  #Bias Accel
        0.1, 0.1, 0.1,     #Arm
-       0.2, 0.2, 0.2],  #Offset Attitude
+       0.002, 0.002, 0.002],  #Offset Attitude
 
 
   #     GYRO                   ACCEL                    gYRO BIAS WALK                          ACCEL BIAS WALK

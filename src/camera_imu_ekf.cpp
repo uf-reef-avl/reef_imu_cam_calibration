@@ -200,11 +200,12 @@ namespace calibration{
             Eigen::Quaterniond world_to_imu_quat(C_world_to_imu.transpose());
             initialized_pnp = true;
 
-            //Block to overwrite PNP
-            world_to_imu_quat.vec() << -0.508,-0.3995,-0.502;
-            world_to_imu_quat.w() = 0.575;
-            world_to_imu_quat.normalize();
-            world_to_imu_pose << -0.186069599037, -0.0483139174716, -2.25986337753;
+                //Block to overwrite PNP
+                world_to_imu_quat.vec() << -0.508, -0.3995, -0.502;
+                world_to_imu_quat.w() = 0.575;
+                world_to_imu_quat.normalize();
+                world_to_imu_pose << -0.186069599037, -0.0483139174716, -2.25986337753;
+
 
 
 
@@ -436,40 +437,57 @@ namespace calibration{
         G.block<3,3>(9,6) = I;
         G.block<3,3>(12,9) = I;
 
-        Eigen::Vector3d gravity(0,0,getVectorMagnitude(accSampleAverage.x,accSampleAverage.y,accSampleAverage.z));
 
         //Block to correct gravity by takin into account the rotation of the board;
         Eigen::Vector3d corrected_gravity;
         Eigen::Matrix3d C_from_optitrack_to_board;
         Eigen::Quaterniond q_optitrack_to_board;
+
+
+//        For bag 20190930_004.bag
+        Eigen::Vector3d gravity(0,0,getVectorMagnitude(accSampleAverage.x*0,accSampleAverage.y*0,accSampleAverage.z));
         q_optitrack_to_board.vec() <<-0.584485290473,-0.318439720992,-0.372926204145;
         q_optitrack_to_board.w() = -0.646451232648;
+
+
+
+
+
         C_from_optitrack_to_board = q_optitrack_to_board.toRotationMatrix().transpose();
 
         corrected_gravity = C_from_optitrack_to_board*gravity;
 //        ROS_WARN_STREAM("corrected G");
 //        ROS_WARN_STREAM(corrected_gravity);
 //        ROS_WARN_STREAM("measured G");
-//        ROS_WARN_STREAM(world_to_imu_quat.toRotationMatrix() * acceleration);
+        Eigen::Vector3d g_W = world_to_imu_quat.toRotationMatrix() * acceleration;
          //End of block to correct gravity
 
 
-        Eigen::MatrixXd true_dynamics(19,1);
-        true_dynamics.setZero();
-        true_dynamics.block<3,1>(0,0) = velocity_W;
-        true_dynamics.block<3,1>(3,0) = world_to_imu_quat.toRotationMatrix() * acceleration + corrected_gravity;
 
+//
+//        Eigen::MatrixXd true_dynamics(19,1);
+//        true_dynamics.setZero();
+//        true_dynamics.block<3,1>(0,0) = velocity_W;
+//        true_dynamics.block<3,1>(3,0) = world_to_imu_quat.toRotationMatrix() * acceleration + corrected_gravity;
+
+        //Propagate velocity of IMU wrt world
+        xHat.block<3,1>(U,0) = xHat.block<3,1>(U,0) + (world_to_imu_quat.toRotationMatrix() * acceleration + corrected_gravity)*dt;
+        //Propagate position of IMU wrt world
+        xHat.block<3,1>(PX,0) =  xHat.block<3,1>(PX,0) + velocity_W * dt;
+
+        //Propagate the rest of the states
+         xHat.block<11,1>(BWX,0) = xHat.block<11,1>(BWX,0);
+
+
+
+        //Propagate attitude
         Eigen::Matrix4d Omega_matrix;
         Omega_matrix.setZero();
         Omega_matrix.topLeftCorner<3,3>() = -1*(reef_msgs::skew(omega));
         Omega_matrix.block<3,1>(0,3) = omega;
         Omega_matrix.block<1,3>(3,0) = -omega.transpose();
-
-
         world_to_imu_quat = (Eigen::Matrix4d::Identity() + 0.5 * dt * Omega_matrix) * world_to_imu_quat.coeffs() ;
-//        world_to_imu_quat.normalize();
-
-        xHat.block<19,1>(4,0) = xHat.block<19,1>(4,0) + dt * true_dynamics;
+//        xHat.block<19,1>(4,0) = xHat.block<19,1>(4,0) + dt * true_dynamics;
         xHat.block<4,1>(0,0) =  world_to_imu_quat.coeffs();
 
         P = P + (F * P + P * F.transpose() + G * Q * G.transpose()) * dt;

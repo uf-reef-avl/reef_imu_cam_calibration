@@ -5,11 +5,12 @@
     <arg name="play_bag" value="true"/>
     <arg name="run_estimator" value="true"/>
     <arg name="run_truth" value="true"/>
-    <arg name="display_expected_measurements" default="false"/>
+    <arg name="display_expected_measurements" default="true"/>
 
     <group if="$(arg play_bag)">
 <!--        <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/20190918_001.bag"/>-->
         <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/20190930_004.bag"/>
+<!--        <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/20190930_002.bag"/>-->
         <node pkg="rosbag" type="play" name="player" output="screen" args="--clock --pause $(arg bag_path)"/>
     </group>
 
@@ -18,7 +19,7 @@
 
     <rosparam file="$(find camera_imu_calib)/params/estimator_param.yaml"/>
     <node if="$(arg run_estimator)" name="camera_imu_calibration" pkg="camera_imu_calib" type="camera_imu_calib_node" output="screen">
-        <param name="enable_update" type="bool" value="false" />
+        <param name="enable_update" type="bool" value="true" />
 
     </node>
 
