@@ -458,7 +458,7 @@ namespace calibration{
 
 
 //        For bag 20190930_004.bag
-        Eigen::Vector3d gravity(0,getVectorMagnitude(accSampleAverage.x*0,accSampleAverage.y*0,accSampleAverage.z),0);
+        Eigen::Vector3d gravity(0,getVectorMagnitude(0,0,accSampleAverage.z),0);
 //        q_optitrack_to_board.vec() <<-0.584485290473,-0.318439720992,-0.372926204145;
 //        q_optitrack_to_board.w() = -0.646451232648;
 //

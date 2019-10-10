@@ -16,16 +16,16 @@
 #       0.02, 0.02, 0.02],  #Offset Attitude
   P0: [0.0002, 0.0002, 0.0002, #Attitude
        0.0001, 0.0001, 0.0001,    #Position
-       0.01, 0.01, 0.01, #Velocity
-       0.0001, 0.0001, 0.0001,  #Bias Gyro
-       0.01, 0.01, 0.01,  #Bias Accel
+       0.0001, 0.0001, 0.0001, #Velocity
+       0.00005, 0.00005, 0.00005,  #Bias Gyro
+       0.1, 0.1, 0.0001,  #Bias Accel
        0.05, 0.05, 0.05,     #Arm
        0.002, 0.002, 0.002],  #Offset Attitude
 
 
 
-    #     GYRO               ACCEL                    gYRO BIAS WALK                          ACCEL BIAS WALK
-  Q: [0.0010,0.0010,0.0010,       0.00004, 0.00004,  0.00004,               0.0, 0., 0.,          0.00001,       0.00000000001,      0.00000000001],
+    #     GYRO                                 ACCEL                    gYRO BIAS WALK                          ACCEL BIAS WALK
+  Q: [0.00050,0.00050,0.00050,       0.00001, 0.00001,  0.00001,               0.0, 0., 0.,          0.00000001,       0.00000000001,      0.00000000001],
 
 #  Q: [0.01, 0.01, 0.01,     0.1, 0.1, 0.1,             0.00001, 0.00001, 0.00001,          0.00001, 0.00001, 0.00001],
 #  Pixel noise STANDARD DEVIATION
@@ -36,7 +36,17 @@
          1, 1, 1,         #velocity
          0.9, 0.9, 0.9, #gyro bias
          0.9, 0.9, 0.9, #accel bias
-         0.1, 0.1, 0.1, #pc_i
-         0.15, 0.15, 0.15] #attitude offset
+         0.15, 0.15, 0.15, #pc_i
+         0.25, 0.25, 0.25] #attitude offset
+
+#    beta: [1, 1, 1, #attitude
+#           1, 1, 1 , #position
+#           1, 1, 1,         #velocity
+#           1, 1, 1, #gyro bias
+#           1, 1, 1, #accel bias
+#           1, 1, 1, #pc_i
+#           1, 1, 1] #attitude offset
+
+
 }
 
