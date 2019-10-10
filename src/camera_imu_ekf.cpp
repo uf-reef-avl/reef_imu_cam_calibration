@@ -201,17 +201,24 @@ namespace calibration{
             initialized_pnp = true;
 
                 //Block to overwrite PNP
-                world_to_imu_quat.vec() << -0.508, -0.3995, -0.502;
-                world_to_imu_quat.w() = 0.575;
+//            20191008_001.bag
+                world_to_imu_quat.vec() << -0.523072936955,-0.483652921944,-0.472375409361;
+                world_to_imu_quat.w() = 0.518975901453;
+                world_to_imu_quat.normalize();
+                world_to_imu_pose << -0.157741842982, 0.0736774667826, -2.63509427242;
+//
+//                closer_002.bag
+//                world_to_imu_quat.vec() << -0.523072936955,-0.483652921944,-0.472375409361;
+//                world_to_imu_quat.w() = 0.518975901453;
 //                world_to_imu_quat.normalize();
-                world_to_imu_pose << -0.186069599037, -0.0483139174716, -2.25986337753;
+//                world_to_imu_pose << -0.157741842982, 0.0736774667826, -2.63509427242;
 
 
 
 
-            xHat.block<3,1>(QX,0) << world_to_imu_quat.vec();
+            xHat.block<3,1>(QX,0) = world_to_imu_quat.vec();
             xHat(QW,0) = world_to_imu_quat.w();
-            xHat.block<3,1>(PX,0) << world_to_imu_pose;
+            xHat.block<3,1>(PX,0) = world_to_imu_pose;
             ROS_WARN_STREAM("XHat post initialization is  \n" <<xHat);
         }
     }
@@ -262,8 +269,8 @@ namespace calibration{
 
             accel_calibrated = true;
 
-//            xHat(BAX,0) = accSampleAverage.x;
-//            xHat(BAY,0) = accSampleAverage.y;
+            xHat(BAX,0) = accSampleAverage.x;
+            xHat(BAY,0) = accSampleAverage.y;
             xHat(BWX, 0) = gyroSampleAverage.x;
             xHat(BWY, 0) = gyroSampleAverage.y;
             xHat(BWZ, 0) = gyroSampleAverage.z;
@@ -327,6 +334,7 @@ namespace calibration{
         z.setZero();
         H.setZero();
         expected_measurement.setZero();
+
         for(unsigned int i =0; i < aruco_corners.metric_corners.size(); i++){
             aruco_helper(aruco_corners.metric_corners[i].top_left, aruco_corners.pixel_corners[i].top_left, i, TOP_LEFT);
             aruco_helper(aruco_corners.metric_corners[i].top_right, aruco_corners.pixel_corners[i].top_right, i, TOP_RIGHT);
@@ -354,6 +362,9 @@ namespace calibration{
     void CameraIMUEKF::aruco_helper(ar_sys::SingleCorner metric_corner, ar_sys::SingleCorner pixel_corner,
                                      unsigned int index, unsigned int position) {
 
+
+
+
         Eigen::Quaterniond world_to_imu_quat;
         world_to_imu_quat.vec() << xHat(QX), xHat(QY), xHat(QZ);
         world_to_imu_quat.w() = xHat(QW);
@@ -373,6 +384,8 @@ namespace calibration{
         Eigen::Matrix3d zero_block;
         Eigen::Matrix3d p_c_i_block;
         Eigen::Matrix3d alpha_block;
+
+
 
         pos_block = -1 * imu_to_camera_quat.toRotationMatrix().transpose() * world_to_imu_quat.toRotationMatrix().transpose();
         zero_block.setZero();
@@ -445,25 +458,20 @@ namespace calibration{
 
 
 //        For bag 20190930_004.bag
-        Eigen::Vector3d gravity(0,0,getVectorMagnitude(accSampleAverage.x*0,accSampleAverage.y*0,accSampleAverage.z));
-        q_optitrack_to_board.vec() <<-0.584485290473,-0.318439720992,-0.372926204145;
-        q_optitrack_to_board.w() = -0.646451232648;
-
-
-
-
-
-        C_from_optitrack_to_board = q_optitrack_to_board.toRotationMatrix().transpose();
-
-        corrected_gravity = C_from_optitrack_to_board*gravity;
-//        ROS_WARN_STREAM("corrected G");
-//        ROS_WARN_STREAM(corrected_gravity);
-//        ROS_WARN_STREAM("measured G");
+        Eigen::Vector3d gravity(0,getVectorMagnitude(accSampleAverage.x*0,accSampleAverage.y*0,accSampleAverage.z),0);
+//        q_optitrack_to_board.vec() <<-0.584485290473,-0.318439720992,-0.372926204145;
+//        q_optitrack_to_board.w() = -0.646451232648;
+//
+//
+//        C_from_optitrack_to_board.setIdentity();
+////        C_from_optitrack_to_board = q_optitrack_to_board.toRotationMatrix().transpose();
+//
+//        corrected_gravity = C_from_optitrack_to_board*gravity;
+////        ROS_WARN_STREAM("corrected G");
+////        ROS_WARN_STREAM(corrected_gravity);
+////        ROS_WARN_STREAM("measured G");
         Eigen::Vector3d g_W = world_to_imu_quat.toRotationMatrix() * acceleration;
          //End of block to correct gravity
-
-
-
 //
 //        Eigen::MatrixXd true_dynamics(19,1);
 //        true_dynamics.setZero();
@@ -471,7 +479,7 @@ namespace calibration{
 //        true_dynamics.block<3,1>(3,0) = world_to_imu_quat.toRotationMatrix() * acceleration + corrected_gravity;
 
         //Propagate velocity of IMU wrt world
-        xHat.block<3,1>(U,0) = xHat.block<3,1>(U,0) + (world_to_imu_quat.toRotationMatrix() * acceleration + corrected_gravity)*dt;
+        xHat.block<3,1>(U,0) = xHat.block<3,1>(U,0) + (world_to_imu_quat.toRotationMatrix() * acceleration + gravity)*dt;
         //Propagate position of IMU wrt world
         xHat.block<3,1>(PX,0) =  xHat.block<3,1>(PX,0) + velocity_W * dt;
 
@@ -487,6 +495,13 @@ namespace calibration{
         Omega_matrix.block<3,1>(0,3) = omega;
         Omega_matrix.block<1,3>(3,0) = -omega.transpose();
         world_to_imu_quat = (Eigen::Matrix4d::Identity() + 0.5 * dt * Omega_matrix) * world_to_imu_quat.coeffs() ;
+
+//Trying a different integration here for the attitude
+//        Eigen::Quaterniond world_to_imu_quat_Ik;
+//        world_to_imu_quat_Ik.vec() = (omega/omega.norm())*sin(omega.norm()*0.5*dt);
+//        world_to_imu_quat_Ik.w() = cos(omega.norm()*0.5*dt);
+//        world_to_imu_quat = reef_msgs::quatMult(world_to_imu_quat_Ik,world_to_imu_quat);
+
 //        xHat.block<19,1>(4,0) = xHat.block<19,1>(4,0) + dt * true_dynamics;
         xHat.block<4,1>(0,0) =  world_to_imu_quat.coeffs();
 
