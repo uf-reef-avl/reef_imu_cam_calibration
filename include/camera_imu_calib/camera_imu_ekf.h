@@ -82,6 +82,9 @@ namespace calibration{
         int number_of_features;
         bool publish_expected_meas_;
         bool enable_partial_update_;
+        bool initialized_timer;
+        ros::Time initial_time;
+
 
         enum StateIndicies
         {   QX,  QY,  QZ, QW,  // Orientation (body wrt world frame)

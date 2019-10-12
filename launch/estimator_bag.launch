@@ -8,11 +8,12 @@
     <arg name="display_expected_measurements" default="true"/>
 
     <group if="$(arg play_bag)">
-<!--        Bag 20190930_004 is the one utilized for all of the previous tuning-->
-<!--        <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/20190930_004.bag"/>-->
+
 <!--        Smoother bags-->
+<!--        Works decently-->
         <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/20191008_001.bag"/>
-<!--        <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/closer_001.bag"/>-->
+<!--        Closer bags-->
+<!--        <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/20191009_001.bag"/>-->
         <node pkg="rosbag" type="play" name="player" output="screen" args="--clock --pause $(arg bag_path)"/>
     </group>
 

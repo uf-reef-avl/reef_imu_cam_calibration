@@ -21,7 +21,8 @@ namespace calibration{
     number_of_features(16),
     publish_full_quaternion(false),
     publish_expected_meas_(false),
-    enable_partial_update_(false)
+    enable_partial_update_(false),
+    initialized_timer(false)
     {
         nh_private.param<double>("estimator_dt", dt, 0.002);
         nh_private.param<int>("number_of_features", number_of_features, 16);
@@ -206,7 +207,7 @@ namespace calibration{
                 world_to_imu_quat.w() = 0.518975901453;
                 world_to_imu_quat.normalize();
                 world_to_imu_pose << -0.157741842982, 0.0736774667826, -2.63509427242;
-//
+
 //                closer_002.bag
 //                world_to_imu_quat.vec() << -0.523072936955,-0.483652921944,-0.472375409361;
 //                world_to_imu_quat.w() = 0.518975901453;
@@ -299,6 +300,12 @@ namespace calibration{
         if(!initialized_pnp)
             return;
 
+        if(!initialized_timer)
+        {
+            initial_time =  ros::Time::now();
+            initialized_timer = true;
+        }
+
         dt = imu.header.stamp.toSec() - last_time_stamp;
         last_time_stamp = imu.header.stamp.toSec();
         state_msg.header = imu.header;
@@ -313,6 +320,30 @@ namespace calibration{
 
         if(got_measurement){
             if(enable_update){
+                //Vary beta as a function of time.
+                //Compute time elapsed
+                ros::Time currtime=ros::Time::now();
+                ros::Duration diff=currtime-initial_time;
+                    if(diff.toSec() >= 60.0 && diff.toSec() < 80.0)
+                    {
+                        betaVector.block<3,1>(P_IX-1,0) << 0.3,0.3,0.3;
+                        ROS_WARN_STREAM("XHat post initialization is  \n" <<xHat);
+
+                        ROS_WARN_STREAM("Beta updated \n" << betaVector);
+                    }
+                if(diff.toSec() >= 80.0 && diff.toSec() < 100.0)
+                    {
+                        betaVector.block<3,1>(P_IX-1,0) << 0.6,0.6,0.6;
+                        ROS_WARN_STREAM("Beta updated \n" << betaVector);
+
+                    }
+
+                if(diff.toSec() >= 100.0 )
+                {
+                    betaVector.block<3,1>(P_IX-1,0) << 0.9,0.9,0.9;
+                    ROS_WARN_STREAM("Beta updated \n" << betaVector);
+
+                }
 
                 nonLinearUpdate();
             }
