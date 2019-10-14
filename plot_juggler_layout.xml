@@ -1,203 +1,203 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <root version="2.3.0">
  <tabbed_widget name="Main Window" parent="main_window">
-  <plotmatrix rows="4" columns="2" tab_name="plot">
-   <plot row="0" col="0">
-    <range left="1043866.582007" right="1043922.603513" bottom="-0.148037" top="0.167638"/>
+  <plotmatrix columns="2" rows="4" tab_name="plot">
+   <plot col="0" row="0">
+    <range bottom="-0.100000" top="0.100000" left="0.000000" right="0.000000"/>
     <limitY/>
-    <curve name="/imu_calib_result/imu_to_camera/position/x" R="255" G="196" custom_transform="noTransform" B="0"/>
-    <curve name="/imu_calib_result/sigma_minus.15" R="232" G="23" custom_transform="noTransform" B="33"/>
-    <curve name="/imu_calib_result/sigma_plus.15" R="26" G="201" custom_transform="noTransform" B="56"/>
+    <curve name="/imu_calib_result/imu_to_camera/position/x" B="0" R="255" custom_transform="noTransform" G="196"/>
+    <curve name="/imu_calib_result/sigma_minus.15" B="33" R="232" custom_transform="noTransform" G="23"/>
+    <curve name="/imu_calib_result/sigma_plus.15" B="56" R="26" custom_transform="noTransform" G="201"/>
     <transform value="noTransform"/>
    </plot>
-   <plot row="1" col="0">
-    <range left="1043866.582007" right="1043922.603513" bottom="-0.337695" top="-0.022495"/>
+   <plot col="0" row="1">
+    <range bottom="-0.100000" top="0.100000" left="0.000000" right="0.000000"/>
     <limitY/>
-    <curve name="/imu_calib_result/imu_to_camera/position/y" R="159" G="72" custom_transform="noTransform" B="0"/>
-    <curve name="/imu_calib_result/sigma_minus.16" R="0" G="215" custom_transform="noTransform" B="255"/>
-    <curve name="/imu_calib_result/sigma_plus.16" R="25" G="80" custom_transform="noTransform" B="255"/>
+    <curve name="/imu_calib_result/imu_to_camera/position/y" B="0" R="159" custom_transform="noTransform" G="72"/>
+    <curve name="/imu_calib_result/sigma_minus.16" B="255" R="0" custom_transform="noTransform" G="215"/>
+    <curve name="/imu_calib_result/sigma_plus.16" B="255" R="25" custom_transform="noTransform" G="80"/>
     <transform value="noTransform"/>
    </plot>
-   <plot row="2" col="0">
-    <range left="1043866.582007" right="1043922.603513" bottom="-0.162721" top="0.152587"/>
+   <plot col="0" row="2">
+    <range bottom="-0.100000" top="0.100000" left="0.000000" right="0.000000"/>
     <limitY/>
-    <curve name="/imu_calib_result/imu_to_camera/position/z" R="163" G="163" custom_transform="noTransform" B="163"/>
-    <curve name="/imu_calib_result/sigma_minus.17" R="145" G="57" custom_transform="noTransform" B="226"/>
-    <curve name="/imu_calib_result/sigma_plus.17" R="255" G="124" custom_transform="noTransform" B="0"/>
+    <curve name="/imu_calib_result/imu_to_camera/position/z" B="163" R="163" custom_transform="noTransform" G="163"/>
+    <curve name="/imu_calib_result/sigma_minus.17" B="226" R="145" custom_transform="noTransform" G="57"/>
+    <curve name="/imu_calib_result/sigma_plus.17" B="0" R="255" custom_transform="noTransform" G="124"/>
     <transform value="noTransform"/>
    </plot>
-   <plot row="3" col="0">
-    <range left="0.000000" right="0.000000" bottom="0.000000" top="1.000000"/>
+   <plot col="0" row="3">
+    <range bottom="0.000000" top="1.000000" left="0.000000" right="0.000000"/>
     <limitY/>
     <transform value="noTransform"/>
    </plot>
-   <plot row="0" col="1">
-    <range left="1043866.582007" right="1043922.603513" bottom="0.499538" top="0.518861"/>
-    <limitY/>
-    <curve name="/imu_calib_result/imu_to_camera/orientation/x" R="25" G="80" custom_transform="noTransform" B="255"/>
+   <plot col="1" row="0">
+    <range bottom="0.450000" top="0.550000" left="0.000000" right="0.000000"/>
+    <limitY min="0.45" max="0.55"/>
+    <curve name="/imu_calib_result/imu_to_camera/orientation/x" B="255" R="25" custom_transform="noTransform" G="80"/>
     <transform value="noTransform"/>
    </plot>
-   <plot row="1" col="1">
-    <range left="1043866.582007" right="1043922.603513" bottom="0.499622" top="0.514195"/>
-    <limitY/>
-    <curve name="/imu_calib_result/imu_to_camera/orientation/y" R="255" G="124" custom_transform="noTransform" B="0"/>
+   <plot col="1" row="1">
+    <range bottom="0.450000" top="0.550000" left="0.000000" right="0.000000"/>
+    <limitY min="0.45" max="0.55"/>
+    <curve name="/imu_calib_result/imu_to_camera/orientation/y" B="0" R="255" custom_transform="noTransform" G="124"/>
     <transform value="noTransform"/>
    </plot>
-   <plot row="2" col="1">
-    <range left="1043866.582007" right="1043922.603513" bottom="0.485466" top="0.500354"/>
-    <limitY/>
-    <curve name="/imu_calib_result/imu_to_camera/orientation/z" R="26" G="201" custom_transform="noTransform" B="56"/>
+   <plot col="1" row="2">
+    <range bottom="0.450000" top="0.550000" left="0.000000" right="0.000000"/>
+    <limitY min="0.45" max="0.55"/>
+    <curve name="/imu_calib_result/imu_to_camera/orientation/z" B="56" R="26" custom_transform="noTransform" G="201"/>
     <transform value="noTransform"/>
    </plot>
-   <plot row="3" col="1">
-    <range left="1043866.582007" right="1043922.603513" bottom="0.480353" top="0.500492"/>
-    <limitY/>
-    <curve name="/imu_calib_result/imu_to_camera/orientation/w" R="232" G="23" custom_transform="noTransform" B="33"/>
+   <plot col="1" row="3">
+    <range bottom="0.450000" top="0.550000" left="0.000000" right="0.000000"/>
+    <limitY min="0.45" max="0.55"/>
+    <curve name="/imu_calib_result/imu_to_camera/orientation/w" B="33" R="232" custom_transform="noTransform" G="23"/>
     <transform value="noTransform"/>
    </plot>
   </plotmatrix>
-  <plotmatrix rows="3" columns="2" tab_name="plot">
-   <plot row="0" col="0">
-    <range left="1043866.582007" right="1043914.135573" bottom="-0.032149" top="0.030851"/>
+  <plotmatrix columns="2" rows="3" tab_name="plot">
+   <plot col="0" row="0">
+    <range bottom="-0.100000" top="0.100000" left="0.000000" right="0.000000"/>
     <limitY/>
-    <curve name="/imu_calib_result/gyro_bias/x" R="241" G="76" custom_transform="noTransform" B="193"/>
-    <curve name="/imu_calib_result/sigma_minus.9" R="145" G="57" custom_transform="noTransform" B="226"/>
-    <curve name="/imu_calib_result/sigma_plus.9" R="255" G="196" custom_transform="noTransform" B="0"/>
+    <curve name="/imu_calib_result/gyro_bias/x" B="193" R="241" custom_transform="noTransform" G="76"/>
+    <curve name="/imu_calib_result/sigma_minus.9" B="226" R="145" custom_transform="noTransform" G="57"/>
+    <curve name="/imu_calib_result/sigma_plus.9" B="0" R="255" custom_transform="noTransform" G="196"/>
     <transform value="noTransform"/>
    </plot>
-   <plot row="1" col="0">
-    <range left="1043866.582007" right="1043914.135573" bottom="-0.032556" top="0.044849"/>
+   <plot col="0" row="1">
+    <range bottom="-0.100000" top="0.100000" left="0.000000" right="0.000000"/>
     <limitY/>
-    <curve name="/imu_calib_result/gyro_bias/y" R="145" G="57" custom_transform="noTransform" B="226"/>
-    <curve name="/imu_calib_result/sigma_minus.10" R="232" G="23" custom_transform="noTransform" B="33"/>
-    <curve name="/imu_calib_result/sigma_plus.10" R="241" G="76" custom_transform="noTransform" B="193"/>
+    <curve name="/imu_calib_result/gyro_bias/y" B="226" R="145" custom_transform="noTransform" G="57"/>
+    <curve name="/imu_calib_result/sigma_minus.10" B="33" R="232" custom_transform="noTransform" G="23"/>
+    <curve name="/imu_calib_result/sigma_plus.10" B="193" R="241" custom_transform="noTransform" G="76"/>
     <transform value="noTransform"/>
    </plot>
-   <plot row="2" col="0">
-    <range left="1043866.582007" right="1043914.135573" bottom="-0.032755" top="0.030801"/>
+   <plot col="0" row="2">
+    <range bottom="-0.100000" top="0.100000" left="0.000000" right="0.000000"/>
     <limitY/>
-    <curve name="/imu_calib_result/gyro_bias/z" R="0" G="215" custom_transform="noTransform" B="255"/>
-    <curve name="/imu_calib_result/sigma_minus.11" R="26" G="201" custom_transform="noTransform" B="56"/>
-    <curve name="/imu_calib_result/sigma_plus.11" R="0" G="215" custom_transform="noTransform" B="255"/>
+    <curve name="/imu_calib_result/gyro_bias/z" B="255" R="0" custom_transform="noTransform" G="215"/>
+    <curve name="/imu_calib_result/sigma_minus.11" B="56" R="26" custom_transform="noTransform" G="201"/>
+    <curve name="/imu_calib_result/sigma_plus.11" B="255" R="0" custom_transform="noTransform" G="215"/>
     <transform value="noTransform"/>
    </plot>
-   <plot row="0" col="1">
-    <range left="1043866.582007" right="1043914.135573" bottom="-0.043222" top="0.031786"/>
+   <plot col="1" row="0">
+    <range bottom="-0.100000" top="0.100000" left="0.000000" right="0.000000"/>
     <limitY/>
-    <curve name="/imu_calib_result/accel_bias/x" R="255" G="196" custom_transform="noTransform" B="0"/>
-    <curve name="/imu_calib_result/sigma_minus.12" R="25" G="80" custom_transform="noTransform" B="255"/>
-    <curve name="/imu_calib_result/sigma_plus.12" R="255" G="124" custom_transform="noTransform" B="0"/>
+    <curve name="/imu_calib_result/accel_bias/x" B="0" R="255" custom_transform="noTransform" G="196"/>
+    <curve name="/imu_calib_result/sigma_minus.12" B="255" R="25" custom_transform="noTransform" G="80"/>
+    <curve name="/imu_calib_result/sigma_plus.12" B="0" R="255" custom_transform="noTransform" G="124"/>
     <transform value="noTransform"/>
    </plot>
-   <plot row="1" col="1">
-    <range left="1043866.582007" right="1043914.135573" bottom="-0.031548" top="0.033459"/>
+   <plot col="1" row="1">
+    <range bottom="-0.100000" top="0.100000" left="0.000000" right="0.000000"/>
     <limitY/>
-    <curve name="/imu_calib_result/accel_bias/y" R="163" G="163" custom_transform="noTransform" B="163"/>
-    <curve name="/imu_calib_result/sigma_minus.13" R="159" G="72" custom_transform="noTransform" B="0"/>
-    <curve name="/imu_calib_result/sigma_plus.13" R="163" G="163" custom_transform="noTransform" B="163"/>
+    <curve name="/imu_calib_result/accel_bias/y" B="163" R="163" custom_transform="noTransform" G="163"/>
+    <curve name="/imu_calib_result/sigma_minus.13" B="0" R="159" custom_transform="noTransform" G="72"/>
+    <curve name="/imu_calib_result/sigma_plus.13" B="163" R="163" custom_transform="noTransform" G="163"/>
     <transform value="noTransform"/>
    </plot>
-   <plot row="2" col="1">
-    <range left="1043866.582007" right="1043914.135573" bottom="-0.031581" top="0.032506"/>
+   <plot col="1" row="2">
+    <range bottom="-0.100000" top="0.100000" left="0.000000" right="0.000000"/>
     <limitY/>
-    <curve name="/imu_calib_result/accel_bias/z" R="159" G="72" custom_transform="noTransform" B="0"/>
-    <curve name="/imu_calib_result/sigma_minus.14" R="241" G="76" custom_transform="noTransform" B="193"/>
-    <curve name="/imu_calib_result/sigma_plus.14" R="255" G="196" custom_transform="noTransform" B="0"/>
+    <curve name="/imu_calib_result/accel_bias/z" B="0" R="159" custom_transform="noTransform" G="72"/>
+    <curve name="/imu_calib_result/sigma_minus.14" B="193" R="241" custom_transform="noTransform" G="76"/>
+    <curve name="/imu_calib_result/sigma_plus.14" B="0" R="255" custom_transform="noTransform" G="196"/>
     <transform value="noTransform"/>
    </plot>
   </plotmatrix>
-  <plotmatrix rows="3" columns="1" tab_name="plot">
-   <plot row="0" col="0">
-    <range left="1043865.782475" right="1043911.028691" bottom="-1.000000" top="1.000000"/>
-    <limitY max="1" min="-1"/>
-    <curve name="/calib_truth/velocity/x" R="0" G="51" custom_transform="noTransform" B="238"/>
-    <curve name="/imu_calib_result/sigma_minus.6" R="255" G="124" custom_transform="noTransform" B="0"/>
-    <curve name="/imu_calib_result/sigma_plus.6" R="145" G="57" custom_transform="noTransform" B="226"/>
-    <curve name="/imu_calib_result/velocity/x" R="159" G="72" custom_transform="noTransform" B="0"/>
+  <plotmatrix columns="1" rows="3" tab_name="plot">
+   <plot col="0" row="0">
+    <range bottom="-1.000000" top="1.000000" left="0.000000" right="0.000000"/>
+    <limitY min="-1" max="1"/>
+    <curve name="/calib_truth/velocity/x" B="238" R="0" custom_transform="noTransform" G="51"/>
+    <curve name="/imu_calib_result/sigma_minus.6" B="0" R="255" custom_transform="noTransform" G="124"/>
+    <curve name="/imu_calib_result/sigma_plus.6" B="226" R="145" custom_transform="noTransform" G="57"/>
+    <curve name="/imu_calib_result/velocity/x" B="0" R="159" custom_transform="noTransform" G="72"/>
     <transform value="noTransform"/>
    </plot>
-   <plot row="1" col="0">
-    <range left="1043865.782475" right="1043911.028691" bottom="-1.000000" top="1.000000"/>
-    <limitY max="1" min="-1"/>
-    <curve name="/calib_truth/velocity/y" R="0" G="119" custom_transform="noTransform" B="119"/>
-    <curve name="/imu_calib_result/sigma_minus.7" R="26" G="201" custom_transform="noTransform" B="56"/>
-    <curve name="/imu_calib_result/sigma_plus.7" R="0" G="215" custom_transform="noTransform" B="255"/>
-    <curve name="/imu_calib_result/velocity/y" R="163" G="163" custom_transform="noTransform" B="163"/>
+   <plot col="0" row="1">
+    <range bottom="-1.000000" top="1.000000" left="0.000000" right="0.000000"/>
+    <limitY min="-1" max="1"/>
+    <curve name="/calib_truth/velocity/y" B="119" R="0" custom_transform="noTransform" G="119"/>
+    <curve name="/imu_calib_result/sigma_minus.7" B="56" R="26" custom_transform="noTransform" G="201"/>
+    <curve name="/imu_calib_result/sigma_plus.7" B="255" R="0" custom_transform="noTransform" G="215"/>
+    <curve name="/imu_calib_result/velocity/y" B="163" R="163" custom_transform="noTransform" G="163"/>
     <transform value="noTransform"/>
    </plot>
-   <plot row="2" col="0">
-    <range left="1043865.782475" right="1043911.028691" bottom="-1.000000" top="1.000000"/>
-    <limitY max="1" min="-1"/>
-    <curve name="/calib_truth/velocity/z" R="80" G="180" custom_transform="noTransform" B="127"/>
-    <curve name="/imu_calib_result/sigma_minus.8" R="232" G="23" custom_transform="noTransform" B="33"/>
-    <curve name="/imu_calib_result/sigma_plus.8" R="241" G="76" custom_transform="noTransform" B="193"/>
-    <curve name="/imu_calib_result/velocity/z" R="25" G="80" custom_transform="noTransform" B="255"/>
-    <transform value="noTransform"/>
-   </plot>
-  </plotmatrix>
-  <plotmatrix rows="4" columns="2" tab_name="plot">
-   <plot row="0" col="0">
-    <range left="1043895.581195" right="1043995.586183" bottom="-0.784726" top="0.611032"/>
-    <limitY/>
-    <curve name="/calib_truth/world_to_imu/position/x" R="0" G="0" custom_transform="noTransform" B="0"/>
-    <curve name="/imu_calib_result/sigma_minus.3" R="255" G="124" custom_transform="noTransform" B="0"/>
-    <curve name="/imu_calib_result/sigma_plus.3" R="145" G="57" custom_transform="noTransform" B="226"/>
-    <curve name="/imu_calib_result/world_to_imu/position/x" R="0" G="2" custom_transform="noTransform" B="255"/>
-    <transform value="noTransform"/>
-   </plot>
-   <plot row="1" col="0">
-    <range left="1043895.581195" right="1043995.586183" bottom="-0.958762" top="0.005154"/>
-    <limitY/>
-    <curve name="/calib_truth/world_to_imu/position/y" R="0" G="0" custom_transform="noTransform" B="0"/>
-    <curve name="/imu_calib_result/sigma_minus.4" R="26" G="201" custom_transform="noTransform" B="56"/>
-    <curve name="/imu_calib_result/sigma_plus.4" R="0" G="215" custom_transform="noTransform" B="255"/>
-    <curve name="/imu_calib_result/world_to_imu/position/y" R="19" G="0" custom_transform="noTransform" B="255"/>
-    <transform value="noTransform"/>
-   </plot>
-   <plot row="2" col="0">
-    <range left="1043895.581195" right="1043995.586183" bottom="-2.872033" top="-1.221109"/>
-    <limitY/>
-    <curve name="/calib_truth/world_to_imu/position/z" R="0" G="0" custom_transform="noTransform" B="0"/>
-    <curve name="/imu_calib_result/sigma_minus.5" R="232" G="23" custom_transform="noTransform" B="33"/>
-    <curve name="/imu_calib_result/sigma_plus.5" R="241" G="76" custom_transform="noTransform" B="193"/>
-    <curve name="/imu_calib_result/world_to_imu/position/z" R="34" G="19" custom_transform="noTransform" B="255"/>
-    <transform value="noTransform"/>
-   </plot>
-   <plot row="3" col="0">
-    <range left="0.000000" right="0.000000" bottom="0.000000" top="1.000000"/>
-    <limitY/>
-    <transform value="noTransform"/>
-   </plot>
-   <plot row="0" col="1">
-    <range left="1043895.581195" right="1043995.586183" bottom="-0.675335" top="-0.484272"/>
-    <limitY/>
-    <curve name="/calib_truth/world_to_imu/orientation/x" R="0" G="0" custom_transform="noTransform" B="0"/>
-    <curve name="/imu_calib_result/world_to_imu/orientation/x" R="1" G="0" custom_transform="noTransform" B="255"/>
-    <transform value="noTransform"/>
-   </plot>
-   <plot row="1" col="1">
-    <range left="1043895.581195" right="1043995.586183" bottom="-0.541689" top="-0.358774"/>
-    <limitY/>
-    <curve name="/calib_truth/world_to_imu/orientation/y" R="0" G="0" custom_transform="noTransform" B="0"/>
-    <curve name="/imu_calib_result/world_to_imu/orientation/y" R="0" G="26" custom_transform="noTransform" B="255"/>
-    <transform value="noTransform"/>
-   </plot>
-   <plot row="2" col="1">
-    <range left="1043895.581195" right="1043995.586183" bottom="-0.540073" top="-0.334820"/>
-    <limitY/>
-    <curve name="/calib_truth/world_to_imu/orientation/z" R="0" G="0" custom_transform="noTransform" B="0"/>
-    <curve name="/imu_calib_result/world_to_imu/orientation/z" R="0" G="1" custom_transform="noTransform" B="255"/>
-    <transform value="noTransform"/>
-   </plot>
-   <plot row="3" col="1">
-    <range left="1043895.581195" right="1043995.586183" bottom="0.381865" top="0.612475"/>
-    <limitY/>
-    <curve name="/calib_truth/world_to_imu/orientation/w" R="0" G="0" custom_transform="noTransform" B="0"/>
-    <curve name="/imu_calib_result/world_to_imu/orientation/w" R="11" G="0" custom_transform="noTransform" B="255"/>
+   <plot col="0" row="2">
+    <range bottom="-1.000000" top="1.000000" left="0.000000" right="0.000000"/>
+    <limitY min="-1" max="1"/>
+    <curve name="/calib_truth/velocity/z" B="127" R="80" custom_transform="noTransform" G="180"/>
+    <curve name="/imu_calib_result/sigma_minus.8" B="33" R="232" custom_transform="noTransform" G="23"/>
+    <curve name="/imu_calib_result/sigma_plus.8" B="193" R="241" custom_transform="noTransform" G="76"/>
+    <curve name="/imu_calib_result/velocity/z" B="255" R="25" custom_transform="noTransform" G="80"/>
     <transform value="noTransform"/>
    </plot>
   </plotmatrix>
-  <currentPlotMatrix index="3"/>
+  <plotmatrix columns="2" rows="4" tab_name="plot">
+   <plot col="0" row="0">
+    <range bottom="-0.100000" top="0.100000" left="0.000000" right="0.000000"/>
+    <limitY/>
+    <curve name="/calib_truth/world_to_imu/position/x" B="0" R="0" custom_transform="noTransform" G="0"/>
+    <curve name="/imu_calib_result/sigma_minus.3" B="0" R="255" custom_transform="noTransform" G="124"/>
+    <curve name="/imu_calib_result/sigma_plus.3" B="226" R="145" custom_transform="noTransform" G="57"/>
+    <curve name="/imu_calib_result/world_to_imu/position/x" B="255" R="0" custom_transform="noTransform" G="2"/>
+    <transform value="noTransform"/>
+   </plot>
+   <plot col="0" row="1">
+    <range bottom="-0.100000" top="0.100000" left="0.000000" right="0.000000"/>
+    <limitY/>
+    <curve name="/calib_truth/world_to_imu/position/y" B="0" R="0" custom_transform="noTransform" G="0"/>
+    <curve name="/imu_calib_result/sigma_minus.4" B="56" R="26" custom_transform="noTransform" G="201"/>
+    <curve name="/imu_calib_result/sigma_plus.4" B="255" R="0" custom_transform="noTransform" G="215"/>
+    <curve name="/imu_calib_result/world_to_imu/position/y" B="255" R="19" custom_transform="noTransform" G="0"/>
+    <transform value="noTransform"/>
+   </plot>
+   <plot col="0" row="2">
+    <range bottom="-0.100000" top="0.100000" left="0.000000" right="0.000000"/>
+    <limitY/>
+    <curve name="/calib_truth/world_to_imu/position/z" B="0" R="0" custom_transform="noTransform" G="0"/>
+    <curve name="/imu_calib_result/sigma_minus.5" B="33" R="232" custom_transform="noTransform" G="23"/>
+    <curve name="/imu_calib_result/sigma_plus.5" B="193" R="241" custom_transform="noTransform" G="76"/>
+    <curve name="/imu_calib_result/world_to_imu/position/z" B="255" R="34" custom_transform="noTransform" G="19"/>
+    <transform value="noTransform"/>
+   </plot>
+   <plot col="0" row="3">
+    <range bottom="0.000000" top="1.000000" left="0.000000" right="0.000000"/>
+    <limitY/>
+    <transform value="noTransform"/>
+   </plot>
+   <plot col="1" row="0">
+    <range bottom="-0.100000" top="0.100000" left="0.000000" right="0.000000"/>
+    <limitY/>
+    <curve name="/calib_truth/world_to_imu/orientation/x" B="0" R="0" custom_transform="noTransform" G="0"/>
+    <curve name="/imu_calib_result/world_to_imu/orientation/x" B="255" R="1" custom_transform="noTransform" G="0"/>
+    <transform value="noTransform"/>
+   </plot>
+   <plot col="1" row="1">
+    <range bottom="-0.100000" top="0.100000" left="0.000000" right="0.000000"/>
+    <limitY/>
+    <curve name="/calib_truth/world_to_imu/orientation/y" B="0" R="0" custom_transform="noTransform" G="0"/>
+    <curve name="/imu_calib_result/world_to_imu/orientation/y" B="255" R="0" custom_transform="noTransform" G="26"/>
+    <transform value="noTransform"/>
+   </plot>
+   <plot col="1" row="2">
+    <range bottom="-0.100000" top="0.100000" left="0.000000" right="0.000000"/>
+    <limitY/>
+    <curve name="/calib_truth/world_to_imu/orientation/z" B="0" R="0" custom_transform="noTransform" G="0"/>
+    <curve name="/imu_calib_result/world_to_imu/orientation/z" B="255" R="0" custom_transform="noTransform" G="1"/>
+    <transform value="noTransform"/>
+   </plot>
+   <plot col="1" row="3">
+    <range bottom="-0.100000" top="0.100000" left="0.000000" right="0.000000"/>
+    <limitY/>
+    <curve name="/calib_truth/world_to_imu/orientation/w" B="0" R="0" custom_transform="noTransform" G="0"/>
+    <curve name="/imu_calib_result/world_to_imu/orientation/w" B="255" R="11" custom_transform="noTransform" G="0"/>
+    <transform value="noTransform"/>
+   </plot>
+  </plotmatrix>
+  <currentPlotMatrix index="0"/>
  </tabbed_widget>
  <use_relative_time_offset enabled="1"/>
  <!-- - - - - - - - - - - - - - - -->
@@ -219,12 +219,11 @@
    <discard_large_arrays value="true"/>
    <max_array_size value="100"/>
   </plugin>
-  <plugin status="idle" ID="RosoutPublisherROS"/>
-  <plugin status="idle" ID="TopicPublisherROS"/>
+  <plugin ID="RosoutPublisherROS" status="idle"/>
+  <plugin ID="TopicPublisherROS" status="idle"/>
  </Plugins>
  <!-- - - - - - - - - - - - - - - -->
  <previouslyLoaded_Datafiles/>
- <previouslyLoaded_Streamer name="ROS_Topic_Streamer"/>
  <!-- - - - - - - - - - - - - - - -->
  <customMathEquations/>
  <snippets/>

@@ -8,21 +8,21 @@ class IMUCalibration;
 namespace calibration{
 
     CameraIMUEKF::CameraIMUEKF() :
-    nh_private("~"),
-    nh_(""),
-    initialize(false),
-    got_measurement(false),
-    got_camera_parameters(false),
-    initialized_pnp(false),
-    accel_calibrated(false),
-    accInitSampleCount(0),
-    cornerSampleCount(false),
-    fx(0),fy(0),cx(0),cy(0),
-    number_of_features(16),
-    publish_full_quaternion(false),
-    publish_expected_meas_(false),
-    enable_partial_update_(false),
-    initialized_timer(false)
+            nh_private("~"),
+            nh_(""),
+            initialize(false),
+            got_measurement(false),
+            got_camera_parameters(false),
+            initialized_pnp(false),
+            accel_calibrated(false),
+            accInitSampleCount(0),
+            cornerSampleCount(false),
+            fx(0),fy(0),cx(0),cy(0),
+            number_of_features(16),
+            publish_full_quaternion(false),
+            publish_expected_meas_(false),
+            enable_partial_update_(false),
+            initialized_timer(false)
     {
         nh_private.param<double>("estimator_dt", dt, 0.002);
         nh_private.param<int>("number_of_features", number_of_features, 16);
@@ -201,12 +201,12 @@ namespace calibration{
             Eigen::Quaterniond world_to_imu_quat(C_world_to_imu.transpose());
             initialized_pnp = true;
 
-                //Block to overwrite PNP
+            //Block to overwrite PNP
 //            20191008_001.bag
-                world_to_imu_quat.vec() << -0.523072936955,-0.483652921944,-0.472375409361;
-                world_to_imu_quat.w() = 0.518975901453;
-                world_to_imu_quat.normalize();
-                world_to_imu_pose << -0.157741842982, 0.0736774667826, -2.63509427242;
+            world_to_imu_quat.vec() << -0.523072936955,-0.483652921944,-0.472375409361;
+            world_to_imu_quat.w() = 0.518975901453;
+            world_to_imu_quat.normalize();
+            world_to_imu_pose << -0.157741842982, 0.0736774667826, -2.63509427242;
 
 //                closer_002.bag
 //                world_to_imu_quat.vec() << -0.523072936955,-0.483652921944,-0.472375409361;
@@ -324,19 +324,19 @@ namespace calibration{
                 //Compute time elapsed
                 ros::Time currtime=ros::Time::now();
                 ros::Duration diff=currtime-initial_time;
-                    if(diff.toSec() >= 60.0 && diff.toSec() < 80.0)
-                    {
-                        betaVector.block<3,1>(P_IX-1,0) << 0.3,0.3,0.3;
-                        ROS_WARN_STREAM("XHat post initialization is  \n" <<xHat);
+                if(diff.toSec() >= 60.0 && diff.toSec() < 80.0)
+                {
+                    betaVector.block<3,1>(P_IX-1,0) << 0.3,0.3,0.3;
+                    ROS_WARN_STREAM("XHat post initialization is  \n" <<xHat);
 
-                        ROS_WARN_STREAM("Beta updated \n" << betaVector);
-                    }
+                    ROS_WARN_STREAM("Beta updated \n" << betaVector);
+                }
                 if(diff.toSec() >= 80.0 && diff.toSec() < 100.0)
-                    {
-                        betaVector.block<3,1>(P_IX-1,0) << 0.6,0.6,0.6;
-                        ROS_WARN_STREAM("Beta updated \n" << betaVector);
+                {
+                    betaVector.block<3,1>(P_IX-1,0) << 0.6,0.6,0.6;
+                    ROS_WARN_STREAM("Beta updated \n" << betaVector);
 
-                    }
+                }
 
                 if(diff.toSec() >= 100.0 )
                 {
@@ -391,7 +391,7 @@ namespace calibration{
     }
 
     void CameraIMUEKF::aruco_helper(ar_sys::SingleCorner metric_corner, ar_sys::SingleCorner pixel_corner,
-                                     unsigned int index, unsigned int position) {
+                                    unsigned int index, unsigned int position) {
 
 
 
@@ -432,7 +432,7 @@ namespace calibration{
         Eigen::Vector2d feature_pixel_position_camera_frame;
 
         feature_pixel_position_camera_frame << fx * (h_hat(0)/h_hat(2)) + cx,
-                                                fy * (h_hat(1)/h_hat(2)) + cy;
+                fy * (h_hat(1)/h_hat(2)) + cy;
 
         expected_measurement.block<2,1>(8*index + position, 0) = feature_pixel_position_camera_frame;
         z.block<2,1>(8*index + position, 0) << pixel_corner.x, pixel_corner.y;
@@ -441,7 +441,7 @@ namespace calibration{
         alpha_block = reef_msgs::skew( imu_to_camera_quat.toRotationMatrix().transpose() * ( world_to_imu_quat.toRotationMatrix().transpose() * (measured_metric - world_to_imu_position) - position_camera_in_imu_frame) );
 
         partial_y_measure_p_fc << fx, 0, -fx * h_hat(0)/h_hat(2),
-                                  0,fy, -fy * h_hat(1)/h_hat(2);
+                0,fy, -fy * h_hat(1)/h_hat(2);
         partial_y_measure_p_fc = (1./h_hat(2)) * partial_y_measure_p_fc;
         partial_x_measure << q_block, pos_block, zero_block, zero_block, zero_block, p_c_i_block, alpha_block;
 
@@ -502,7 +502,7 @@ namespace calibration{
 ////        ROS_WARN_STREAM(corrected_gravity);
 ////        ROS_WARN_STREAM("measured G");
         Eigen::Vector3d g_W = world_to_imu_quat.toRotationMatrix() * acceleration;
-         //End of block to correct gravity
+        //End of block to correct gravity
 //
 //        Eigen::MatrixXd true_dynamics(19,1);
 //        true_dynamics.setZero();
@@ -515,7 +515,7 @@ namespace calibration{
         xHat.block<3,1>(PX,0) =  xHat.block<3,1>(PX,0) + velocity_W * dt;
 
         //Propagate the rest of the states
-         xHat.block<11,1>(BWX,0) = xHat.block<11,1>(BWX,0);
+        xHat.block<11,1>(BWX,0) = xHat.block<11,1>(BWX,0);
 
 
 

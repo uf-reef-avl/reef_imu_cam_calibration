@@ -39,14 +39,14 @@ camera_imu_calibration: {
          0.9, 0.01, 0.01, #accel bias
          0.1, 0.1, 0.1, #pc_i
          0.20, 0.20, 0.20] #attitude offset
-#
-#      beta: [1, 1, 1, #attitude
-#             1, 1, 1 , #position
-#             1, 1, 1,         #velocity
-#             1, 1, 1, #gyro bias
-#             1, 1, 1, #accel bias
-#             1, 1, 1, #pc_i
-#             1, 1, 1] #attitude offset
+  #
+  #      beta: [1, 1, 1, #attitude
+  #             1, 1, 1 , #position
+  #             1, 1, 1,         #velocity
+  #             1, 1, 1, #gyro bias
+  #             1, 1, 1, #accel bias
+  #             1, 1, 1, #pc_i
+  #             1, 1, 1] #attitude offset
 
 
 }
