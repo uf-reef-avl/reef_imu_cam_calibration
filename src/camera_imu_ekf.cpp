@@ -29,7 +29,7 @@ namespace calibration{
         nh_private.param<bool>("publish_full_quaternion", publish_full_quaternion, true);
         nh_private.param<bool>("publish_expected_meas", publish_expected_meas_, true);
         nh_private.param<bool>("enable_partial_update", enable_partial_update_, true);
-        nh_private.param<bool>("enable_update", enable_update, true);
+        nh_private.param<bool>("enable_dynamic_update", enable_dynamic_update, true);
 
         F = Eigen::MatrixXd(21,21);
         F.setZero();
@@ -270,8 +270,8 @@ namespace calibration{
 
             accel_calibrated = true;
 
-            xHat(BAX,0) = accSampleAverage.x;
-            xHat(BAY,0) = accSampleAverage.y;
+//            xHat(BAX,0) = accSampleAverage.x;
+//            xHat(BAY,0) = accSampleAverage.y;
             xHat(BWX, 0) = gyroSampleAverage.x;
             xHat(BWY, 0) = gyroSampleAverage.y;
             xHat(BWZ, 0) = gyroSampleAverage.z;
@@ -319,7 +319,7 @@ namespace calibration{
         nonLinearPropagation(omega_imu, accelxyz_in_body_frame);
 
         if(got_measurement){
-            if(enable_update){
+            if(enable_dynamic_update){
                 //Vary beta as a function of time.
                 //Compute time elapsed
                 ros::Time currtime=ros::Time::now();
@@ -327,8 +327,6 @@ namespace calibration{
                 if(diff.toSec() >= 60.0 && diff.toSec() < 80.0)
                 {
                     betaVector.block<3,1>(P_IX-1,0) << 0.3,0.3,0.3;
-                    ROS_WARN_STREAM("XHat post initialization is  \n" <<xHat);
-
                     ROS_WARN_STREAM("Beta updated \n" << betaVector);
                 }
                 if(diff.toSec() >= 80.0 && diff.toSec() < 100.0)
@@ -345,8 +343,8 @@ namespace calibration{
 
                 }
 
-                nonLinearUpdate();
             }
+            nonLinearUpdate();
             got_measurement = false;
         }
         publish_state();
@@ -488,21 +486,10 @@ namespace calibration{
         Eigen::Quaterniond q_optitrack_to_board;
 
 
-//        For bag 20190930_004.bag
         Eigen::Vector3d gravity(0,getVectorMagnitude(0,0,accSampleAverage.z),0);
-//        q_optitrack_to_board.vec() <<-0.584485290473,-0.318439720992,-0.372926204145;
-//        q_optitrack_to_board.w() = -0.646451232648;
+        //Based on the derivation, gravity must be interpreted as the value needed to cancel the accel's gravity out
+        //expressed in the inertial frame. Since the accel reports ~-9.8 , here gravity will be ~+9.8 in the corresponding axis.
 //
-//
-//        C_from_optitrack_to_board.setIdentity();
-////        C_from_optitrack_to_board = q_optitrack_to_board.toRotationMatrix().transpose();
-//
-//        corrected_gravity = C_from_optitrack_to_board*gravity;
-////        ROS_WARN_STREAM("corrected G");
-////        ROS_WARN_STREAM(corrected_gravity);
-////        ROS_WARN_STREAM("measured G");
-        Eigen::Vector3d g_W = world_to_imu_quat.toRotationMatrix() * acceleration;
-        //End of block to correct gravity
 //
 //        Eigen::MatrixXd true_dynamics(19,1);
 //        true_dynamics.setZero();

@@ -52,7 +52,7 @@ namespace calibration{
         bool accel_calibrated;
         bool initialized_pnp;
         bool publish_full_quaternion;
-        bool enable_update;
+        bool enable_dynamic_update;
 
         int accInitSampleCount;
         int cornerSampleCount;
