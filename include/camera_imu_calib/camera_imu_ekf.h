@@ -53,6 +53,7 @@ namespace calibration{
         bool initialized_pnp;
         bool publish_full_quaternion;
         bool enable_dynamic_update;
+        double mahalanobis_param;
 
         int accInitSampleCount;
         int cornerSampleCount;
@@ -73,6 +74,7 @@ namespace calibration{
         void initializeAcc(geometry_msgs::Vector3 acc, geometry_msgs::Vector3 gyro);
         void initializePNP(ar_sys::ArucoCornerMsg aruco_corners);
         void getCamParams(const sensor_msgs::CameraInfo& cam_info);
+        bool chi2AcceptPixels();
 
         void publish_state();
 
@@ -100,18 +102,23 @@ namespace calibration{
         CameraIMUEKF();
         ~CameraIMUEKF();
 
-        int fx;
-        int fy;
-        int cx;
-        int cy;
+        double fx;
+        double fy;
+        double cx;
+        double cy;
         Eigen::Vector3d q_attitude_error;
         Eigen::Vector3d q_offset_error;
+
+        Eigen::Quaterniond  initial_imu_q;
+        Eigen::Vector3d initial_imu_position;
+
 
         bool got_camera_parameters;
 
         void sensorUpdate(sensor_msgs::Imu imu);
         void sensorUpdate(ar_sys::ArucoCornerMsg aruco_corners);
         void getCameraInfo(const sensor_msgs::CameraInfo &msg);
+        void getInitialPose(camera_imu_calib::IMUCalibration msg);
 
     };
 

@@ -1,6 +1,6 @@
 <launch>
 
-    <arg name="record_bag" default="true"/>
+    <arg name="record_bag" default="false"/>
     <arg name="bag_name" default="test"/>
     <arg name="play_bag" value="true"/>
     <arg name="run_estimator" value="true"/>
@@ -11,18 +11,31 @@
 
 <!--        Smoother bags-->
 <!--        Works decently-->
-        <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/20191008_001.bag"/>
+<!--        <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/20191008_001.bag"/>-->
+
+<!--        disks-->
+<!--        <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/20191015_001.bag"/>-->
 <!--        Closer bags-->
 <!--        <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/20191009_001.bag"/>-->
+<!--        Tripod bags-->
+<!--        <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/20191017_003.bag"/>-->
+<!--        Smooth hand held. This bags started on  20191018    -->
+<!--        <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/20191018_003.bag"
+        <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/20191019_003.bag"/>/>-->
+        <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/20191021_001.bag"/>
+
+
+
         <node pkg="rosbag" type="play" name="player" output="screen" args="--clock --pause $(arg bag_path)"/>
     </group>
 
-    <include if="$(arg run_truth)" file="$(find calib_truth)/launch/calib_truth.launch" >
+    <include if="$(arg run_truth)" file="$(find calib_truth)/launch/calib_truth.launch">
     </include>
 
     <rosparam file="$(find camera_imu_calib)/params/estimator_param.yaml"/>
     <node if="$(arg run_estimator)" name="camera_imu_calibration" pkg="camera_imu_calib" type="camera_imu_calib_node" output="screen">
         <param name="enable_dynamic_update" type="bool" value="false" />
+        <param name="mahalanobis_param" type="double" value="5000" />
 
     </node>
 

@@ -29,10 +29,12 @@ namespace calibration{
 
         ros::Subscriber imu_subscriber_;
         ros::Subscriber corner_subscriber;
+        ros::Subscriber initial_pose_subscriber;
         ros::Subscriber camera_info_subscriber;
 
         void imuCallback(const sensor_msgs::ImuConstPtr &msg);
         void cornerCallback(const ar_sys::ArucoCornerMsg &msg);
+        void initialPoseCallback(const camera_imu_calib::IMUCalibrationConstPtr  &msg);
         void cameraInfoCallback(const sensor_msgs::CameraInfo &msg);
 
         CameraIMUEKF calib_obj;

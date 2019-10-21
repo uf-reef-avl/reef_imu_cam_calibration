@@ -8,6 +8,7 @@ namespace calibration{
     SensorManager::SensorManager() : private_nh_("~"), nh_(""), num_pose(0){
 
         corner_subscriber = nh_.subscribe("/ar_single_board/corner", 1, &SensorManager::cornerCallback, this);
+        initial_pose_subscriber = nh_.subscribe("/calib_truth", 1, &SensorManager::initialPoseCallback, this);
         imu_subscriber_ = nh_.subscribe("imu/data", 1, &SensorManager::imuCallback, this);
         camera_info_subscriber = nh_.subscribe("camera/rgb/camera_info", 1, &SensorManager::cameraInfoCallback,this);
     }
@@ -31,6 +32,13 @@ namespace calibration{
         calib_obj.getCameraInfo(msg);
         camera_info_subscriber.shutdown();
     }
+
+    void SensorManager::initialPoseCallback(const camera_imu_calib::IMUCalibrationConstPtr  &msg){
+        calib_obj.getInitialPose(*msg);
+//        initial_pose_subscriber.shutdown();
+
+    }
+
 }
 
 int main(int argc, char **argv) {
