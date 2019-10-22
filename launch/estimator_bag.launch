@@ -1,7 +1,7 @@
 <launch>
 
-    <arg name="record_bag" default="false"/>
-    <arg name="bag_name" default="test"/>
+    <arg name="record_bag" default="true"/>
+    <arg name="bag_name" default="10222019_001_first_time_dynamic_partial_update"/>
     <arg name="play_bag" value="true"/>
     <arg name="run_estimator" value="true"/>
     <arg name="run_truth" value="true"/>
@@ -20,9 +20,9 @@
 <!--        Tripod bags-->
 <!--        <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/20191017_003.bag"/>-->
 <!--        Smooth hand held. This bags started on  20191018    -->
-<!--        <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/20191018_003.bag"
-        <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/20191019_003.bag"/>/>-->
-        <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/20191021_001.bag"/>
+        <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/20191018_003.bag"/>
+<!--        <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/20191019_003.bag"/>-->
+<!--        <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/20191021_001.bag"/>-->
 
 
 
@@ -34,8 +34,9 @@
 
     <rosparam file="$(find camera_imu_calib)/params/estimator_param.yaml"/>
     <node if="$(arg run_estimator)" name="camera_imu_calibration" pkg="camera_imu_calib" type="camera_imu_calib_node" output="screen">
-        <param name="enable_dynamic_update" type="bool" value="false" />
+        <param name="enable_dynamic_update" type="bool" value="true" />
         <param name="mahalanobis_param" type="double" value="5000" />
+        <param name="number_of_features" type="double" value="16" />
 
     </node>
 
@@ -48,6 +49,7 @@
         </node>
     </group>
 
-    <node if="$(arg record_bag)" name="record" pkg="rosbag" type="record" args="-O $(arg bag_name) ar_single_board/corner ar_single_board/pose ar_single_board/result  imu/data tf_imu/ned/pose_stamped tf_calib/ned/pose_stamped /calib_truth /imu_calib_result"/>
+<!--    <node if="$(arg record_bag)" name="record" pkg="rosbag" type="record" args="-O $(arg bag_name) ar_single_board/corner ar_single_board/pose ar_single_board/result  imu/data tf_imu/ned/pose_stamped tf_calib/ned/pose_stamped /calib_truth /imu_calib_result"/>-->
+    <node if="$(arg record_bag)" name="record" pkg="rosbag" type="record" args="-O $(arg bag_name)  tf_imu/ned/pose_stamped tf_calib/ned/pose_stamped /calib_truth /imu_calib_result"/>
 
 </launch>

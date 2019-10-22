@@ -79,9 +79,6 @@ namespace calibration{
 
         double R_std_float; // Set to 1 as default.
         R_std_float = R_std(0,0);
-        ROS_INFO_STREAM("hI");
-        ROS_INFO_STREAM("R_std_float");
-        ROS_INFO_STREAM(R_std_float);
 
         R = R_std_float*R.setIdentity();
 
@@ -102,8 +99,7 @@ namespace calibration{
 
         pnp_average_translation.setZero();
         pnp_average_euler.setZero();
-//        pnp_quaternion_stack = Eigen::MatrixXd(4,CORNER_SAMPLE_SIZE);
-//        pnp_quaternion_stack.setZero();
+
 
     }
 
@@ -236,6 +232,10 @@ namespace calibration{
         fy = msg.K[4];
         cx = msg.K[2];
         cy = msg.K[5];
+//        fx = 606.811009;
+//        fy = 611.104701;
+//        cx = 325.199941;
+//        cy = 227.591593;
         getCamParams(msg);
         got_camera_parameters = true;
     }
@@ -291,7 +291,7 @@ namespace calibration{
 
     void CameraIMUEKF::sensorUpdate(sensor_msgs::Imu imu) {
 
-        if (isnan(getVectorMagnitude(imu.linear_acceleration.x, imu.linear_acceleration.y,imu.linear_acceleration.z))){
+        if (std::isnan(getVectorMagnitude(imu.linear_acceleration.x, imu.linear_acceleration.y,imu.linear_acceleration.z))){
             ROS_ERROR_STREAM("IMU is giving NaNs");
             return;
         }
@@ -436,19 +436,29 @@ namespace calibration{
 
         Eigen::Vector2d feature_pixel_position_camera_frame;
 
-        feature_pixel_position_camera_frame << fx * (h_hat(0)/h_hat(2)) + cx,
-                                                fy * (h_hat(1)/h_hat(2)) + cy;
+//        feature_pixel_position_camera_frame << fx * (h_hat(0)/h_hat(2)) + cx,
+//                                                fy * (h_hat(1)/h_hat(2)) + cy;
+
+        feature_pixel_position_camera_frame <<  (h_hat(0)/h_hat(2)) ,
+                                                (h_hat(1)/h_hat(2)) ;
 
         expected_measurement.block<2,1>(8*index + position, 0) = feature_pixel_position_camera_frame;
-        z.block<2,1>(8*index + position, 0) << pixel_corner.x, pixel_corner.y;
+//        z.block<2,1>(8*index + position, 0) << pixel_corner.x , pixel_corner.y;
+        z.block<2,1>(8*index + position, 0) << (pixel_corner.x - cx)/fx, (pixel_corner.y - cy)/fy;
 
         q_block = q_I_to_C.toRotationMatrix().transpose() * reef_msgs::skew( q_W_to_I.toRotationMatrix().transpose() * (measured_metric - p_I_in_W) );
         alpha_block =  reef_msgs::skew(q_I_to_C.toRotationMatrix().transpose() *q_W_to_I.toRotationMatrix().transpose()*measured_metric) -1* reef_msgs::skew ( q_I_to_C.toRotationMatrix().transpose()*q_W_to_I.toRotationMatrix().transpose() * p_I_in_W) -1*reef_msgs::skew(q_I_to_C.toRotationMatrix().transpose()*position_camera_in_imu_frame) ;
 //        alpha_block =  reef_msgs::skew(q_I_to_C.toRotationMatrix().transpose() * ( q_W_to_I.toRotationMatrix().transpose() * (measured_metric - p_I_in_W) - position_camera_in_imu_frame) );
 
-        partial_y_measure_p_fc << fx, 0,    -fx * h_hat(0)/h_hat(2),
-                                  0,  fy,   -fy * h_hat(1)/h_hat(2);
-        partial_y_measure_p_fc = (1./h_hat(2)) * partial_y_measure_p_fc;
+//        partial_y_measure_p_fc << fx, 0,    -fx * h_hat(0)/h_hat(2),
+//                                  0,  fy,   -fy * h_hat(1)/h_hat(2);
+//        partial_y_measure_p_fc = (1./h_hat(2)) * partial_y_measure_p_fc;
+
+        partial_y_measure_p_fc << h_hat(2),          0,           -h_hat(0),
+                                  0,                 h_hat(2),   -h_hat(1);
+
+        partial_y_measure_p_fc = (1./(h_hat(2)*h_hat(2))) * partial_y_measure_p_fc;
+
         partial_x_measure << q_block, pos_block, zero_block, zero_block, zero_block, p_c_i_block, alpha_block;
 
         H.block<2,21>(8*index + position,0)  = partial_y_measure_p_fc * partial_x_measure;
