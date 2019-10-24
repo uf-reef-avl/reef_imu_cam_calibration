@@ -228,14 +228,14 @@ namespace calibration{
 
     void CameraIMUEKF::getCameraInfo(const sensor_msgs::CameraInfo &msg){
 
-        fx = msg.K[0];
-        fy = msg.K[4];
-        cx = msg.K[2];
-        cy = msg.K[5];
-//        fx = 606.811009;
-//        fy = 611.104701;
-//        cx = 325.199941;
-//        cy = 227.591593;
+//        fx = msg.K[0];
+//        fy = msg.K[4];
+//        cx = msg.K[2];
+//        cy = msg.K[5];
+        fx = 601.915886;
+        fy = 601.092858;
+        cx = 330.987713;
+        cy = 240.179825;
         getCamParams(msg);
         got_camera_parameters = true;
     }
@@ -514,16 +514,12 @@ namespace calibration{
 //        q_I_to_Ik.w() = cos(w_hat.norm()*0.5*dt);
 //        q_W_to_I = reef_msgs::quatMult(q_I_to_Ik,q_W_to_I);
 
-
         //Propagate velocity of IMU wrt world
         xHat.block<3,1>(U,0) = xHat.block<3,1>(U,0) + (q_W_to_I.toRotationMatrix() * s_hat + gravity)*dt;
         //Propagate position of IMU wrt world
         xHat.block<3,1>(PX,0) =  xHat.block<3,1>(PX,0) + velocity_W * dt;
-
         //Propagate the rest of the states
         xHat.block<11,1>(BWX,0) = xHat.block<11,1>(BWX,0);
-
-
 
         //Propagate attitude original block
         Eigen::Matrix4d Omega_matrix;
@@ -532,9 +528,7 @@ namespace calibration{
         Omega_matrix.block<3,1>(0,3) = w_hat;
         Omega_matrix.block<1,3>(3,0) = -w_hat.transpose();
         q_W_to_I = (Eigen::Matrix4d::Identity() + 0.5 * dt * Omega_matrix) * q_W_to_I.coeffs() ;
-
-
-//        xHat.block<19,1>(4,0) = xHat.block<19,1>(4,0) + dt * true_dynamics;
+//      xHat.block<19,1>(4,0) = xHat.block<19,1>(4,0) + dt * true_dynamics;
         xHat.block<4,1>(0,0) =  q_W_to_I.coeffs();
 
         P = P + (F * P + P * F.transpose() + G * Q * G.transpose()) * dt;

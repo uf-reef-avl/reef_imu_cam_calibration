@@ -1,6 +1,6 @@
 <launch>
 
-    <arg name="record_bag" default="true"/>
+    <arg name="record_bag" default="false"/>
     <arg name="bag_name" default="10222019_001_first_time_dynamic_partial_update"/>
     <arg name="play_bag" value="true"/>
     <arg name="run_estimator" value="true"/>
@@ -19,7 +19,9 @@
 <!--        <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/20191009_001.bag"/>-->
 <!--        Tripod bags-->
 <!--        <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/20191017_003.bag"/>-->
+
 <!--        Smooth hand held. This bags started on  20191018    -->
+<!--        BAG 20191018_003 is the GLORIUOS BAG -->
         <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/20191018_003.bag"/>
 <!--        <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/20191019_003.bag"/>-->
 <!--        <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/20191021_001.bag"/>-->
