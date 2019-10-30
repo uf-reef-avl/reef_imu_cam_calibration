@@ -232,10 +232,10 @@ namespace calibration{
 //        fy = msg.K[4];
 //        cx = msg.K[2];
 //        cy = msg.K[5];
-        fx = 601.915886;
-        fy = 601.092858;
-        cx = 330.987713;
-        cy = 240.179825;
+        fx = 601.9158860083387;
+        fy = 601.0928580130748;
+        cx = 330.9877128566246;
+        cy = 240.1798253357238;
         getCamParams(msg);
         got_camera_parameters = true;
     }
@@ -276,8 +276,8 @@ namespace calibration{
 
             accel_calibrated = true;
 
-            xHat(BAX,0) = accSampleAverage.x;
-            xHat(BAY,0) = accSampleAverage.y;
+//            xHat(BAX,0) = accSampleAverage.x;
+//            xHat(BAY,0) = accSampleAverage.y;
             xHat(BWX, 0) = gyroSampleAverage.x;
             xHat(BWY, 0) = gyroSampleAverage.y;
             xHat(BWZ, 0) = gyroSampleAverage.z;

@@ -9,11 +9,11 @@
 
     <group if="$(arg play_bag)">
 
-<!--        Smoother bags-->
+<!--        Smoother bags=================================================================================-->
 <!--        Works decently-->
 <!--        <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/20191008_001.bag"/>-->
 
-<!--        disks-->
+<!--        disks motion =================================================================================-->
 <!--        <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/20191015_001.bag"/>-->
 <!--        Closer bags-->
 <!--        <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/20191009_001.bag"/>-->
@@ -21,14 +21,17 @@
 <!--        <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/20191017_003.bag"/>-->
 
 <!--        Smooth hand held. This bags started on  20191018    -->
-<!--        BAG 20191018_003 is the GLORIUOS BAG -->
-        <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/20191018_003.bag"/>
+<!--        BAG 20191018_003 is the GLORIUOS BAG ==========================================================-->
+<!--        <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/20191018_003.bag"/>-->
 <!--        <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/20191019_003.bag"/>-->
 <!--        <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/20191021_001.bag"/>-->
+<!--        Vector NAV bags started here===================================================================-->
+        <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/vectornav/20191030_001.bag"/>
 
 
 
-        <node pkg="rosbag" type="play" name="player" output="screen" args="--clock --pause $(arg bag_path)"/>
+
+    <node pkg="rosbag" type="play" name="player" output="screen" args="--clock --pause $(arg bag_path)"/>
     </group>
 
     <include if="$(arg run_truth)" file="$(find calib_truth)/launch/calib_truth.launch">
@@ -36,9 +39,10 @@
 
     <rosparam file="$(find camera_imu_calib)/params/estimator_param.yaml"/>
     <node if="$(arg run_estimator)" name="camera_imu_calibration" pkg="camera_imu_calib" type="camera_imu_calib_node" output="screen">
-        <param name="enable_dynamic_update" type="bool" value="true" />
+        <param name="enable_dynamic_update" type="bool" value="false" />
         <param name="mahalanobis_param" type="double" value="5000" />
         <param name="number_of_features" type="double" value="16" />
+        <remap from="/imu/data" to="/imu/imu"></remap>
 
     </node>
 
