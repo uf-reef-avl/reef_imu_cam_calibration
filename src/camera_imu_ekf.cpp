@@ -198,24 +198,8 @@ namespace calibration{
             Eigen::Quaterniond world_to_imu_quat(C_world_to_imu.transpose());
             initialized_pnp = true;
 
-            //Block to overwrite PNP
-//            20191008_001.bag
-//            world_to_imu_quat.vec() << -0.523072936955,-0.483652921944,-0.472375409361;
-//            world_to_imu_quat.w() = 0.518975901453;
-//            world_to_imu_quat.normalize();
-//            world_to_imu_pose << -0.157741842982, 0.0736774667826, -2.63509427242;
-
               world_to_imu_quat = initial_imu_q;
               world_to_imu_pose = initial_imu_position;
-
-
-
-//                closer_002.bag
-//                world_to_imu_quat.vec() << -0.523072936955,-0.483652921944,-0.472375409361;
-//                world_to_imu_quat.w() = 0.518975901453;
-//                world_to_imu_quat.normalize();
-//                world_to_imu_pose << -0.157741842982, 0.0736774667826, -2.63509427242;
-
 
 
 
@@ -435,10 +419,12 @@ namespace calibration{
         h_hat = q_I_to_C.toRotationMatrix().transpose() * ( q_W_to_I.toRotationMatrix().transpose() * (measured_metric -  p_I_in_W) - position_camera_in_imu_frame);
 
         Eigen::Vector2d feature_pixel_position_camera_frame;
-
+//Camera parameters in Jacobian
+//
 //        feature_pixel_position_camera_frame << fx * (h_hat(0)/h_hat(2)) + cx,
 //                                                fy * (h_hat(1)/h_hat(2)) + cy;
 
+//No camera parameters in Jacobian
         feature_pixel_position_camera_frame <<  (h_hat(0)/h_hat(2)) ,
                                                 (h_hat(1)/h_hat(2)) ;
 
@@ -449,23 +435,24 @@ namespace calibration{
         q_block = q_I_to_C.toRotationMatrix().transpose() * reef_msgs::skew( q_W_to_I.toRotationMatrix().transpose() * (measured_metric - p_I_in_W) );
         alpha_block =  reef_msgs::skew(q_I_to_C.toRotationMatrix().transpose() *q_W_to_I.toRotationMatrix().transpose()*measured_metric) -1* reef_msgs::skew ( q_I_to_C.toRotationMatrix().transpose()*q_W_to_I.toRotationMatrix().transpose() * p_I_in_W) -1*reef_msgs::skew(q_I_to_C.toRotationMatrix().transpose()*position_camera_in_imu_frame) ;
 //        alpha_block =  reef_msgs::skew(q_I_to_C.toRotationMatrix().transpose() * ( q_W_to_I.toRotationMatrix().transpose() * (measured_metric - p_I_in_W) - position_camera_in_imu_frame) );
-
+//Camera parameters in Jacobian
 //        partial_y_measure_p_fc << fx, 0,    -fx * h_hat(0)/h_hat(2),
 //                                  0,  fy,   -fy * h_hat(1)/h_hat(2);
 //        partial_y_measure_p_fc = (1./h_hat(2)) * partial_y_measure_p_fc;
-
+//==============================================================================================
+//No camera parameters in Jacobian
         partial_y_measure_p_fc << h_hat(2),          0,           -h_hat(0),
                                   0,                 h_hat(2),   -h_hat(1);
 
         partial_y_measure_p_fc = (1./(h_hat(2)*h_hat(2))) * partial_y_measure_p_fc;
-
+//==============================================================================================
         partial_x_measure << q_block, pos_block, zero_block, zero_block, zero_block, p_c_i_block, alpha_block;
 
         H.block<2,21>(8*index + position,0)  = partial_y_measure_p_fc * partial_x_measure;
     }
 
     void CameraIMUEKF::nonLinearPropagation(Eigen::Vector3d omega, Eigen::Vector3d acceleration) {
-        Eigen::Vector3d gravity(0,-accSampleAverage.z,0);
+        Eigen::Vector3d gravity(0,getVectorMagnitude(accSampleAverage.x,accSampleAverage.y,accSampleAverage.z),0);
         //Based on the derivation, gravity must be interpreted as the value needed to cancel the accel's gravity out
         //expressed in the inertial frame. Since the accel reports ~-9.8 , here gravity will be ~+9.8 in the corresponding axis.
 //
