@@ -53,6 +53,7 @@ namespace calibration{
         bool initialized_pnp;
         bool publish_full_quaternion;
         bool enable_dynamic_update;
+        bool use_mocap_to_initialize;
         double mahalanobis_param;
 
         int accInitSampleCount;

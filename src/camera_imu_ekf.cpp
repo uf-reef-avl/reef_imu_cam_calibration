@@ -31,6 +31,7 @@ namespace calibration{
         nh_private.param<bool>("enable_partial_update", enable_partial_update_, true);
         nh_private.param<bool>("enable_dynamic_update", enable_dynamic_update, true);
         nh_private.param<double>("mahalanobis_param", mahalanobis_param, 100);
+        nh_private.param<bool>("use_mocap_to_initialize", use_mocap_to_initialize, true);
 
         F = Eigen::MatrixXd(21,21);
         F.setZero();
@@ -198,8 +199,10 @@ namespace calibration{
             Eigen::Quaterniond world_to_imu_quat(C_world_to_imu.transpose());
             initialized_pnp = true;
 
-              world_to_imu_quat = initial_imu_q;
-              world_to_imu_pose = initial_imu_position;
+            if(use_mocap_to_initialize){
+                world_to_imu_quat = initial_imu_q;
+                world_to_imu_pose = initial_imu_position;
+            }
 
 
 
@@ -335,9 +338,9 @@ namespace calibration{
 
             }
             //Don't update if the measurement is an outlier
-//            if(chi2AcceptPixels()){
+            if(chi2AcceptPixels()){
                 nonLinearUpdate();
-//            }
+            }
             //Reset got measurement flag
             got_measurement = false;
         }

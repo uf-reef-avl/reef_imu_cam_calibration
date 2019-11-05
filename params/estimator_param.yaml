@@ -4,7 +4,7 @@ camera_imu_calibration: {
           0, 0, 0,
           0, 0, 0,
           0, 0, 0,
-          0.01, -0.15, -0.005,
+          0.14, 0.195, -0.06,
           0.5, 0.5, 0.5, 0.5],
 
   #  P0: [0.02, 0.02, 0.02, #Attitude
@@ -13,13 +13,13 @@ camera_imu_calibration: {
   #       0.01, 0.01, 0.01,  #Bias Gyro
   #       0.005, 0.005, 0.005,  #Bias Accel
   #       0.05, 0.05, 0.05,     #Arm
-  #       0.02, 0.02, 0.02],  #Offset Attitude
+  #       0.02, 0.02, 0.02],  #Offset Attitude`
   P0: [0.002, 0.002, 0.002, #Attitude
-       0.0001, 0.0001, 0.0001,    #Position
-       0.0001, 0.0001, 0.0001, #Velocity
-       0.000001, 0.000001, 0.000001,  #Bias Gyro
+       0.0025, 0.0025, 0.0025,    #Position
+       0.0000001, 0.0000001, 0.0000001, #Velocity
+       0.001, 0.001, 0.001,  #Bias Gyro
        0.00001, 0.00001, 0.00001,  #Bias Accel
-       0.0001, 0.0001, 0.0001,     #Arm
+       0.00001, 0.00001, 0.00001,     #Arm
        0.002, 0.002, 0.002],  #Offset Attitude
 
   #From Datasheet: Continuous time parameters
@@ -35,30 +35,31 @@ camera_imu_calibration: {
 
   #    VectorNav
   #Noise density
-  #    Gyro  = 0.0035 deg/s/sqrt(Hz) => 1 sigma = 0.000061085 rad/s/sqrt(Hz)
-  #    Accel =  0.14  milig/sqrt(Hz) => 1 sigma = 00014 g/sqrt(Hz)
-    Q: [0.000061085,0.000061085,0.000061085,       0.00014, 0.00014,  0.00014,               0, 0, 0,          0,       0,      0],  #  Pixel noise STANDARD DEVIATION
-
+  #    Gyro  = 0.0035 deg/s/sqrt(Hz) => 1 sigma = 0.000061085 rad/s/sqrt(Hz) ==>>> 1 sigma^2 = 0.000000004
+  #    Accel =  0.14  milig/sqrt(Hz) => 1 sigma = 0.00014 g/sqrt(Hz)==>>> 1 sigma^2 = 0.00000002
+  #With walks
+#    Q: [0.000004,0.000004,0.000004,       0.00001, 0.00001,  0.00001,                0.000000002,  0.000000002,  0.000000002,          0.00000000002,       0.00000000002,      0.00000000002],  #  Pixel noise STANDARD DEVIATION
+  Q: [0.000061085,0.000061085,0.000061085,       0.00001, 0.00001,  0.00001,               0, 0, 0,          0,       0,      0],  #  Pixel noise STANDARD DEVIATION
 
   R_std: [0.005],
 
   beta: [1, 1, 1, #attitude
          1, 1, 1 , #position
          1, 1, 1,         #velocity
-         0.9, 0.9, 0.9, #gyro bias
-         0.9, 0.9, 0.9, #accel bias
-         0.5, 0.5, 0.5, #pc_i
-         0.75,0.75,0.75] #attitude offset
+         1, 1, 1, #gyro bias
+         1, 1, 1, #accel bias
+         0.1, 0.1, 0.1, #pc_i
+         0.25,0.25,0.25] #attitude offset
 
 
-    #
-    #      beta: [1, 1, 1, #attitude
-    #             1, 1, 1 , #position
-    #             1, 1, 1,         #velocity
-    #             1, 1, 1, #gyro bias
-    #             1, 1, 1, #accel bias
-    #             1, 1, 1, #pc_i
-  #             1, 1, 1] #attitude offset
+#
+#          beta: [1, 1, 1, #attitude
+#                 1, 1, 1 , #position
+#                 1, 1, 1,         #velocity
+#                 1, 1, 1, #gyro bias
+#                 1, 1, 1, #accel bias
+#                 1, 1, 1, #pc_i
+#               1, 1, 1] #attitude offset
 
 
 }
