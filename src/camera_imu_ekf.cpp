@@ -319,19 +319,19 @@ namespace calibration{
                 ros::Duration diff=currtime-initial_time;
                 if(diff.toSec() >= 60.0 && diff.toSec() < 80.0)
                 {
-                    betaVector.block<3,1>(P_IX-1,0) << 0.3,0.3,0.3;
+                    betaVector.block<6,1>(P_IX-1,0) << 0.3,0.3,0.3,0.3,0.3,0.3;
                     ROS_WARN_STREAM("Beta updated \n" << betaVector);
                 }
                 if(diff.toSec() >= 80.0 && diff.toSec() < 100.0)
                 {
-                    betaVector.block<3,1>(P_IX-1,0) << 0.6,0.6,0.6;
+                    betaVector.block<6,1>(P_IX-1,0) << 0.6,0.6,0.6,0.6,0.6,0.6;
                     ROS_WARN_STREAM("Beta updated \n" << betaVector);
 
                 }
 
                 if(diff.toSec() >= 100.0 )
                 {
-                    betaVector.block<3,1>(P_IX-1,0) << 0.9,0.9,0.9;
+                    betaVector.block<6,1>(P_IX-1,0) << 0.9,0.9,0.9,0.9,0.9,0.9;
                     ROS_WARN_STREAM("Beta updated \n" << betaVector);
 
                 }
@@ -629,7 +629,7 @@ namespace calibration{
             state_msg.imu_to_camera.orientation.w = 1.0;
         }
 
-        for(unsigned int i =0; i<20; i++){
+        for(unsigned int i = 0; i<=20; i++){
             //In this section we use the index i to acces the covariance matrix.
 
             state_msg.P[i] = P(i,i);

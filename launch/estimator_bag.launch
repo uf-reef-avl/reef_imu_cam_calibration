@@ -1,11 +1,11 @@
 <launch>
 
     <arg name="record_bag" default="true"/>
-    <arg name="bag_name" default="for_plots"/>
+    <arg name="bag_name" default="20191113_001_for_plots"/>
     <arg name="play_bag" value="true"/>
     <arg name="run_estimator" value="true"/>
     <arg name="run_truth" value="true"/>
-    <arg name="display_expected_measurements" default="false"/>
+    <arg name="display_expected_measurements" default="true"/>
 
     <group if="$(arg play_bag)">
 
@@ -15,9 +15,9 @@
 
 <!--        disks motion =================================================================================-->
 <!--        <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/20191015_001.bag"/>-->
-<!--        Closer bags-->
+<!--        Closer bags====================================================================================-->
 <!--        <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/20191009_001.bag"/>-->
-<!--        Tripod bags-->
+<!--        Tripod bags====================================================================================-->
 <!--        <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/20191017_003.bag"/>-->
 
 <!--        Smooth hand held. This bags started on  20191018    -->
@@ -25,11 +25,13 @@
 <!--        <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/20191018_003.bag"/>-->
 <!--        <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/20191019_003.bag"/>-->
 <!--        <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/20191021_001.bag"/>-->
+
+
 <!--        Vector NAV bags started here===================================================================-->
 <!--        <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/vectornav/20191030_001.bag"/>-->
 <!--    <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/vectornav/20191031_002.bag"/>-->
-
-    <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/vectornav/compensated/20191105_001.bag"/>
+<!--    <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/vectornav/compensated/20191105_001.bag"/>-->
+    <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/vectornav/compensated/20191106_004.bag"/>
 
     <node pkg="rosbag" type="play" name="player" output="screen" args="--clock --pause  $(arg bag_path)"/>
     </group>
@@ -41,8 +43,9 @@
     <node if="$(arg run_estimator)" name="camera_imu_calibration" pkg="camera_imu_calib" type="camera_imu_calib_node" output="screen">
         <param name="enable_dynamic_update" type="bool" value="true" />
         <param name="use_mocap_to_initialize" type="bool" value="false" />
-        <param name="mahalanobis_param" type="double" value="100000" />
+        <param name="mahalanobis_param" type="double" value="10000000" />
         <param name="number_of_features" type="double" value="16" />
+        <param name="publish_full_quaternion" type="bool" value="false" />
         <remap from="/imu/data" to="/imu/imu"></remap>
 
     </node>
