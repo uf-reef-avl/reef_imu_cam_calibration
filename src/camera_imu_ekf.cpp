@@ -366,10 +366,11 @@ namespace calibration{
             aruco_helper(aruco_corners.metric_corners[i].top_right, aruco_corners.pixel_corners[i].top_right, i, TOP_RIGHT);
             aruco_helper(aruco_corners.metric_corners[i].bottom_right, aruco_corners.pixel_corners[i].bottom_right, i, BOTTOM_RIGHT);
             aruco_helper(aruco_corners.metric_corners[i].bottom_left, aruco_corners.pixel_corners[i].bottom_left, i, BOTTOM_LEFT);
-//            ROS_WARN_STREAM(i);
         }
 
         if(publish_expected_meas_){
+            Eigen::MatrixXd S;
+            S = H * P * H.transpose() + R;
             camera_imu_calib::ExpectedMeasurement expected_msg;
             expected_msg.header = aruco_corners.header;
             expected_msg.expected_measurement.reserve(4 * aruco_corners.metric_corners.size());
@@ -378,6 +379,9 @@ namespace calibration{
             for(unsigned int i =0; i < 8 * aruco_corners.metric_corners.size(); i++){
                 expected_msg.expected_measurement.push_back(expected_measurement(i));
                 expected_msg.pixel_measurement.push_back(z(i));
+                for(unsigned int j =0; j < 8 * aruco_corners.metric_corners.size(); j++){
+                    expected_msg.covariance[j*16+i] = S(i,j);
+                }
             }
             expect_pixel_publisher_.publish(expected_msg);
 
@@ -545,10 +549,12 @@ namespace calibration{
         K = P * H.transpose() * (H * P * H.transpose() + R).inverse();
         Eigen::MatrixXd correction(21,1);
 
-        if(enable_partial_update_)
-        {correction = (Eigen::MatrixXd::Identity(21, 21) - gammas) * K * (z - expected_measurement);}
-        else
-        {correction = K * (z- expected_measurement);}
+        if(enable_partial_update_){
+            correction = (Eigen::MatrixXd::Identity(21, 21) - gammas) * K * (z - expected_measurement);
+        }
+        else{
+            correction = K * (z- expected_measurement);
+        }
 
         Eigen::Quaterniond quat_error;
         //Let's save the correction for the quaternion attitude.
