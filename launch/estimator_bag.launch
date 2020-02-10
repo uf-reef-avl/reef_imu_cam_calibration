@@ -1,7 +1,7 @@
 <launch>
 
     <arg name="record_bag" default="true"/>
-    <arg name="bag_name" default="20191113_001_for_plots"/>
+    <arg name="bag_name" default="20191106_003_for_plots"/>
     <arg name="play_bag" value="true"/>
     <arg name="run_estimator" value="true"/>
     <arg name="run_truth" value="true"/>

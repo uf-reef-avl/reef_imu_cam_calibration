@@ -379,9 +379,10 @@ namespace calibration{
             for(unsigned int i =0; i < 8 * aruco_corners.metric_corners.size(); i++){
                 expected_msg.expected_measurement.push_back(expected_measurement(i));
                 expected_msg.pixel_measurement.push_back(z(i));
-                for(unsigned int j =0; j < 8 * aruco_corners.metric_corners.size(); j++){
-                    expected_msg.covariance[j*16+i] = S(i,j);
-                }
+                expected_msg.covariance.push_back(S(i,i));
+//                for(unsigned int j =0; j < 8 * aruco_corners.metric_corners.size(); j++){
+//                    expected_msg.covariance.push_back(S(i,j));
+//                }
             }
             expect_pixel_publisher_.publish(expected_msg);
 
