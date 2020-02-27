@@ -75,6 +75,8 @@ namespace calibration{
         void initializeAcc(geometry_msgs::Vector3 acc, geometry_msgs::Vector3 gyro);
         void initializePNP(ar_sys::ArucoCornerMsg aruco_corners);
         void getCamParams(const sensor_msgs::CameraInfo& cam_info);
+        void integration_function(const Eigen::MatrixXd &x, Eigen::MatrixXd &dxdt, const double t);
+        void RK45integrate();
         bool chi2AcceptPixels();
 
         void publish_state();

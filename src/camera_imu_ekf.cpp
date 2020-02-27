@@ -320,19 +320,19 @@ namespace calibration{
                 if(diff.toSec() >= 60.0 && diff.toSec() < 80.0)
                 {
                     betaVector.block<6,1>(P_IX-1,0) << 0.3,0.3,0.3,0.3,0.3,0.3;
-                    ROS_WARN_STREAM("Beta updated \n" << betaVector);
+//                    ROS_WARN_STREAM("Beta updated \n" << betaVector);
                 }
                 if(diff.toSec() >= 80.0 && diff.toSec() < 100.0)
                 {
                     betaVector.block<6,1>(P_IX-1,0) << 0.6,0.6,0.6,0.6,0.6,0.6;
-                    ROS_WARN_STREAM("Beta updated \n" << betaVector);
+//                    ROS_WARN_STREAM("Beta updated \n" << betaVector);
 
                 }
 
                 if(diff.toSec() >= 100.0 )
                 {
                     betaVector.block<6,1>(P_IX-1,0) << 0.9,0.9,0.9,0.9,0.9,0.9;
-                    ROS_WARN_STREAM("Beta updated \n" << betaVector);
+//                    ROS_WARN_STREAM("Beta updated \n" << betaVector);
 
                 }
 
@@ -508,26 +508,97 @@ namespace calibration{
 //        q_I_to_Ik.vec() = (w_hat/w_hat.norm())*sin(w_hat.norm()*0.5*dt);
 //        q_I_to_Ik.w() = cos(w_hat.norm()*0.5*dt);
 //        q_W_to_I = reef_msgs::quatMult(q_I_to_Ik,q_W_to_I);
+//
+//        //Propagate velocity of IMU wrt world
+//        xHat.block<3,1>(U,0) = xHat.block<3,1>(U,0) + (q_W_to_I.toRotationMatrix() * s_hat + gravity)*dt;
+//        //Propagate position of IMU wrt world
+//        xHat.block<3,1>(PX,0) =  xHat.block<3,1>(PX,0) + velocity_W * dt;
+//        //Propagate the rest of the states
+//        xHat.block<11,1>(BWX,0) = xHat.block<11,1>(BWX,0);
+//
+//        //Propagate attitude original block
+//        Eigen::Matrix4d Omega_matrix;
+//        Omega_matrix.setZero();
+//        Omega_matrix.topLeftCorner<3,3>() = -1*(reef_msgs::skew(w_hat));
+//        Omega_matrix.block<3,1>(0,3) = w_hat;
+//        Omega_matrix.block<1,3>(3,0) = -w_hat.transpose();
+//        q_W_to_I = (Eigen::Matrix4d::Identity() + 0.5 * dt * Omega_matrix) * q_W_to_I.coeffs() ;
+////      xHat.block<19,1>(4,0) = xHat.block<19,1>(4,0) + dt * true_dynamics;
+//        xHat.block<4,1>(0,0) =  q_W_to_I.coeffs();
+//        if(dt>0.01)
+        RK45integrate();
 
-        //Propagate velocity of IMU wrt world
-        xHat.block<3,1>(U,0) = xHat.block<3,1>(U,0) + (q_W_to_I.toRotationMatrix() * s_hat + gravity)*dt;
-        //Propagate position of IMU wrt world
-        xHat.block<3,1>(PX,0) =  xHat.block<3,1>(PX,0) + velocity_W * dt;
-        //Propagate the rest of the states
-        xHat.block<11,1>(BWX,0) = xHat.block<11,1>(BWX,0);
+        P = P + (F * P + P * F.transpose() + G * Q * G.transpose()) * dt;
+    }
 
-        //Propagate attitude original block
+    void CameraIMUEKF::RK45integrate(){
+        // Following equations from http://maths.cnam.fr/IMG/pdf/RungeKuttaFehlbergProof.pdf
+        //step size is assumed to be dt
+        double h = dt;
+        Eigen::MatrixXd k1, k2, k3, k4, k5,k6;
+
+        integration_function(xHat, k1, 0.0);
+        k1 *= h;
+
+        integration_function(xHat + 0.5 * k1, k2, 0.0);
+        k2 *=h;
+
+        integration_function(xHat + 0.5 * k2, k3, 0.0);
+        k3 *=h;
+
+        integration_function(xHat + k3, k4, 0.0);
+        k4 *=h;
+
+        xHat = xHat + 1/6 * (k1 + 2 * k2 + 2* k3 + k4);
+
+//        integration_function(xHat + 0.25 * k1, k2, 0.0);
+//        k2 *=h;
+//
+//        integration_function(xHat + (3/32) * k1 + (9/32) * k2 , k3, 0.0);
+//        k3 *=h;
+//
+//        integration_function(xHat + (1932/2197) * k1 - (7200/2197) * k2 + (7296/2191) * k3, k4, 0.0);
+//        k4 *=h;
+//
+//        integration_function(xHat + (439/216) * k1 - 8 * k2 + (3680/513) * k3 - (845/4104)*k4, k5, 0.0);
+//        k5 *=h;
+//
+//        integration_function(xHat - (8/27) * k1 + 2 * k2 - (3544/2565) * k3 + (1859/4104)*k4 - (11/40) * k5, k6, 0.0);
+//        k6 *=h;
+//
+//        xHat = xHat + (25/216) * k1 + (1408/2565)*k3 + (2197/4101)*k4 - (1/5) * k5;
+    }
+
+    void CameraIMUEKF::integration_function(const Eigen::MatrixXd &x, Eigen::MatrixXd &dxdt, const double t)
+    {
+        Eigen::Vector3d gravity(0,getVectorMagnitude(accSampleAverage.x,accSampleAverage.y,accSampleAverage.z),0);
+        Eigen::Vector3d w_hat;
+        Eigen::Vector3d s_hat;
+        Eigen::Quaterniond q_W_to_I;
+        q_W_to_I.vec() << x(QX), x(QY), x(QZ);
+        q_W_to_I.w() = x(QW);
+
+        Eigen::Vector3d world_to_imu_position(x(PX), x(PY), x(PZ));
+        Eigen::Vector3d velocity_W(x(U), x(V), x(W));
+        Eigen::Vector3d gyro_bias(x(BWX), x(BWY) , x(BWZ));
+        Eigen::Vector3d accel_bias(x(BAX), x(BAY) , x(BAZ));
+        Eigen::Vector3d position_camera_in_imu_frame(x(P_IX), x(P_IY), x(P_IZ));
+
+        Eigen::Quaterniond imu_to_camera_quat;
+        imu_to_camera_quat.vec() << x(Q_IX), x(Q_IY), x(Q_IZ);
+        imu_to_camera_quat.w() = x(Q_IW);
         Eigen::Matrix4d Omega_matrix;
         Omega_matrix.setZero();
         Omega_matrix.topLeftCorner<3,3>() = -1*(reef_msgs::skew(w_hat));
         Omega_matrix.block<3,1>(0,3) = w_hat;
         Omega_matrix.block<1,3>(3,0) = -w_hat.transpose();
-        q_W_to_I = (Eigen::Matrix4d::Identity() + 0.5 * dt * Omega_matrix) * q_W_to_I.coeffs() ;
-//      xHat.block<19,1>(4,0) = xHat.block<19,1>(4,0) + dt * true_dynamics;
-        xHat.block<4,1>(0,0) =  q_W_to_I.coeffs();
 
-        P = P + (F * P + P * F.transpose() + G * Q * G.transpose()) * dt;
+        dxdt = Eigen::MatrixXd::Zero(23,1);
+        dxdt.block<4,1>(QX,0) =  0.5 * dt * Omega_matrix * q_W_to_I.coeffs();
+        dxdt.block<3,1>(U,0) = q_W_to_I.toRotationMatrix() * s_hat + gravity;
+        dxdt.block<3,1>(PX,0) =  velocity_W;
     }
+
 
 
     void CameraIMUEKF::nonLinearUpdate() {
