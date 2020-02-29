@@ -425,37 +425,35 @@ namespace calibration{
         Eigen::Vector3d measured_metric(metric_corner.x, metric_corner.y, metric_corner.z);
         Eigen::Vector3d h_hat;
         h_hat = q_I_to_C.toRotationMatrix().transpose() * ( q_W_to_I.toRotationMatrix().transpose() * (measured_metric -  p_I_in_W) - position_camera_in_imu_frame);
-
         Eigen::Vector2d feature_pixel_position_camera_frame;
 //Camera parameters in Jacobian
-//
-//        feature_pixel_position_camera_frame << fx * (h_hat(0)/h_hat(2)) + cx,
-//                                                fy * (h_hat(1)/h_hat(2)) + cy;
+        feature_pixel_position_camera_frame << fx * (h_hat(0)/h_hat(2)) + cx,
+                                                fy * (h_hat(1)/h_hat(2)) + cy;
 
 //No camera parameters in Jacobian
-        feature_pixel_position_camera_frame <<  (h_hat(0)/h_hat(2)) ,
-                                                (h_hat(1)/h_hat(2)) ;
+//        feature_pixel_position_camera_frame <<  (h_hat(0)/h_hat(2)) ,
+//                                                (h_hat(1)/h_hat(2)) ;
 
         expected_measurement.block<2,1>(8*index + position, 0) = feature_pixel_position_camera_frame;
-//        z.block<2,1>(8*index + position, 0) << pixel_corner.x , pixel_corner.y;
-        z.block<2,1>(8*index + position, 0) << (pixel_corner.x - cx)/fx, (pixel_corner.y - cy)/fy;
+        //Camera parameters in Jacobian
+        z.block<2,1>(8*index + position, 0) << pixel_corner.x , pixel_corner.y;
+//=================================================================================================
+        //No cam parameters in Jacobian
+//        z.block<2,1>(8*index + position, 0) << (pixel_corner.x - cx)/fx, (pixel_corner.y - cy)/fy;
 
         q_block = q_I_to_C.toRotationMatrix().transpose() * reef_msgs::skew( q_W_to_I.toRotationMatrix().transpose() * (measured_metric - p_I_in_W) );
         alpha_block =  reef_msgs::skew(q_I_to_C.toRotationMatrix().transpose() *q_W_to_I.toRotationMatrix().transpose()*measured_metric) -1* reef_msgs::skew ( q_I_to_C.toRotationMatrix().transpose()*q_W_to_I.toRotationMatrix().transpose() * p_I_in_W) -1*reef_msgs::skew(q_I_to_C.toRotationMatrix().transpose()*position_camera_in_imu_frame) ;
-//        alpha_block =  reef_msgs::skew(q_I_to_C.toRotationMatrix().transpose() * ( q_W_to_I.toRotationMatrix().transpose() * (measured_metric - p_I_in_W) - position_camera_in_imu_frame) );
 //Camera parameters in Jacobian
-//        partial_y_measure_p_fc << fx, 0,    -fx * h_hat(0)/h_hat(2),
-//                                  0,  fy,   -fy * h_hat(1)/h_hat(2);
-//        partial_y_measure_p_fc = (1./h_hat(2)) * partial_y_measure_p_fc;
+        partial_y_measure_p_fc << fx, 0,    -fx * h_hat(0)/h_hat(2),
+                                  0,  fy,   -fy * h_hat(1)/h_hat(2);
+        partial_y_measure_p_fc = (1./h_hat(2)) * partial_y_measure_p_fc;
 //==============================================================================================
 //No camera parameters in Jacobian
-        partial_y_measure_p_fc << h_hat(2),          0,           -h_hat(0),
-                                  0,                 h_hat(2),   -h_hat(1);
-
-        partial_y_measure_p_fc = (1./(h_hat(2)*h_hat(2))) * partial_y_measure_p_fc;
+//        partial_y_measure_p_fc << h_hat(2),          0,           -h_hat(0),
+//                                  0,                 h_hat(2),   -h_hat(1);
+//        partial_y_measure_p_fc = (1./(h_hat(2)*h_hat(2))) * partial_y_measure_p_fc;
 //==============================================================================================
         partial_x_measure << q_block, pos_block, zero_block, zero_block, zero_block, p_c_i_block, alpha_block;
-
         H.block<2,21>(8*index + position,0)  = partial_y_measure_p_fc * partial_x_measure;
     }
 
@@ -498,18 +496,8 @@ namespace calibration{
         G.block<3,3>(12,9) = I;
 
 
-        //Block to correct gravity by takin into account the rotation of the board;
-        Eigen::Vector3d corrected_gravity;
-        Eigen::Matrix3d C_from_optitrack_to_board;
-        Eigen::Quaterniond q_optitrack_to_board;
 
-//Trying a different integration here for the attitude
-//        Eigen::Quaterniond q_I_to_Ik;
-//        q_I_to_Ik.vec() = (w_hat/w_hat.norm())*sin(w_hat.norm()*0.5*dt);
-//        q_I_to_Ik.w() = cos(w_hat.norm()*0.5*dt);
-//        q_W_to_I = reef_msgs::quatMult(q_I_to_Ik,q_W_to_I);
-//
-//        //Propagate velocity of IMU wrt world
+        //Propagate velocity of IMU wrt world
 //        xHat.block<3,1>(U,0) = xHat.block<3,1>(U,0) + (q_W_to_I.toRotationMatrix() * s_hat + gravity)*dt;
 //        //Propagate position of IMU wrt world
 //        xHat.block<3,1>(PX,0) =  xHat.block<3,1>(PX,0) + velocity_W * dt;
@@ -523,34 +511,38 @@ namespace calibration{
 //        Omega_matrix.block<3,1>(0,3) = w_hat;
 //        Omega_matrix.block<1,3>(3,0) = -w_hat.transpose();
 //        q_W_to_I = (Eigen::Matrix4d::Identity() + 0.5 * dt * Omega_matrix) * q_W_to_I.coeffs() ;
-////      xHat.block<19,1>(4,0) = xHat.block<19,1>(4,0) + dt * true_dynamics;
 //        xHat.block<4,1>(0,0) =  q_W_to_I.coeffs();
-//        if(dt>0.01)
-        RK45integrate();
+
+
+
+        RK45integrate(w_hat,s_hat);
 
         P = P + (F * P + P * F.transpose() + G * Q * G.transpose()) * dt;
     }
 
-    void CameraIMUEKF::RK45integrate(){
+    void CameraIMUEKF::RK45integrate(Eigen::Vector3d w_hat, Eigen::Vector3d s_hat){
         // Following equations from http://maths.cnam.fr/IMG/pdf/RungeKuttaFehlbergProof.pdf
         //step size is assumed to be dt
         double h = dt;
         Eigen::MatrixXd k1, k2, k3, k4, k5,k6;
 
-        integration_function(xHat, k1, 0.0);
+        k1 = integration_function(xHat, 0.0, w_hat, s_hat);
         k1 *= h;
 
-        integration_function(xHat + 0.5 * k1, k2, 0.0);
+        k2 = integration_function(xHat + 0.5*k1, 0.0, w_hat, s_hat);
         k2 *=h;
 
-        integration_function(xHat + 0.5 * k2, k3, 0.0);
+        k3 = integration_function(xHat + 0.5*k2, 0.0, w_hat, s_hat);
         k3 *=h;
 
-        integration_function(xHat + k3, k4, 0.0);
+        k4 = integration_function(xHat + k3, 0.0, w_hat, s_hat);
         k4 *=h;
 
-        xHat = xHat + 1/6 * (k1 + 2 * k2 + 2* k3 + k4);
-
+        xHat = xHat + (k1 + 2*k2 + 2*k3 + k4)*(1/6);
+        //Re-Normalize quaternion attitude
+        Eigen::Quaterniond attitude_to_normalize = Eigen::Quaterniond (xHat.block<4,1>(QX,0));
+        attitude_to_normalize.normalize();
+        xHat.block<4,1>(QX,0) = attitude_to_normalize.coeffs();
 //        integration_function(xHat + 0.25 * k1, k2, 0.0);
 //        k2 *=h;
 //
@@ -569,11 +561,9 @@ namespace calibration{
 //        xHat = xHat + (25/216) * k1 + (1408/2565)*k3 + (2197/4101)*k4 - (1/5) * k5;
     }
 
-    void CameraIMUEKF::integration_function(const Eigen::MatrixXd &x, Eigen::MatrixXd &dxdt, const double t)
+    Eigen::MatrixXd CameraIMUEKF::integration_function( Eigen::MatrixXd x, const double t, Eigen::Vector3d w_hat,Eigen::Vector3d s_hat)
     {
         Eigen::Vector3d gravity(0,getVectorMagnitude(accSampleAverage.x,accSampleAverage.y,accSampleAverage.z),0);
-        Eigen::Vector3d w_hat;
-        Eigen::Vector3d s_hat;
         Eigen::Quaterniond q_W_to_I;
         q_W_to_I.vec() << x(QX), x(QY), x(QZ);
         q_W_to_I.w() = x(QW);
@@ -593,10 +583,12 @@ namespace calibration{
         Omega_matrix.block<3,1>(0,3) = w_hat;
         Omega_matrix.block<1,3>(3,0) = -w_hat.transpose();
 
-        dxdt = Eigen::MatrixXd::Zero(23,1);
-        dxdt.block<4,1>(QX,0) =  0.5 * dt * Omega_matrix * q_W_to_I.coeffs();
+        Eigen::MatrixXd dxdt = Eigen::MatrixXd::Zero(23,1);
+        Eigen::Quaterniond q_W_to_I_dot = Eigen::Quaterniond((0.5 * Omega_matrix * q_W_to_I.coeffs()));
+        dxdt.block<4,1>(QX,0) = q_W_to_I_dot.coeffs();
         dxdt.block<3,1>(U,0) = q_W_to_I.toRotationMatrix() * s_hat + gravity;
         dxdt.block<3,1>(PX,0) =  velocity_W;
+        return dxdt;
     }
 
 
@@ -662,10 +654,10 @@ namespace calibration{
 
     void CameraIMUEKF::publish_state() {
         if(publish_full_quaternion){
-            state_msg.world_to_imu.orientation.x = xHat(0);
-            state_msg.world_to_imu.orientation.y = xHat(1);
-            state_msg.world_to_imu.orientation.z = xHat(2);
-            state_msg.world_to_imu.orientation.w = xHat(3);
+            state_msg.world_to_imu.orientation.x = -xHat(0);
+            state_msg.world_to_imu.orientation.y = -xHat(1);
+            state_msg.world_to_imu.orientation.z = -xHat(2);
+            state_msg.world_to_imu.orientation.w = -xHat(3);
         }
         else{
             state_msg.world_to_imu.orientation.x = q_attitude_error(0);

@@ -31,10 +31,10 @@
 <!--        <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/vectornav/20191030_001.bag"/>-->
 <!--    <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/vectornav/20191031_002.bag"/>-->
 <!--    <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/vectornav/compensated/20191105_001.bag"/>-->
-<!--    <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/vectornav/compensated/20191106_004.bag"/>-->
-    <arg name="bag_path" default="/media/prashant/Samsung_T5/ar_sys_bags/20191106_003.bag"/>
+    <arg name="bag_path" default="/media/humberto/data/camera_imu_calibration_bags/vectornav/compensated/20191106_004.bag"/>
+<!--    <arg name="bag_path" default="/media/prashant/Samsung_T5/ar_sys_bags/20191106_003.bag"/>-->
 
-    <node pkg="rosbag" type="play" name="player" output="screen" args="--clock --pause  $(arg bag_path)"/>
+    <node pkg="rosbag" type="play" name="player" output="screen" args="--clock --pause -s 30  $(arg bag_path)"/>
     </group>
 
     <include if="$(arg run_truth)" file="$(find calib_truth)/launch/calib_truth.launch">
@@ -46,7 +46,7 @@
         <param name="use_mocap_to_initialize" type="bool" value="false" />
         <param name="mahalanobis_param" type="double" value="10000000" />
         <param name="number_of_features" type="double" value="16" />
-        <param name="publish_full_quaternion" type="bool" value="false" />
+        <param name="publish_full_quaternion" type="bool" value="true" />
         <remap from="/imu/data" to="/imu/imu"></remap>
 
     </node>
