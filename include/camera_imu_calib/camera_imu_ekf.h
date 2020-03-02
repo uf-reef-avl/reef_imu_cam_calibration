@@ -54,6 +54,7 @@ namespace calibration{
         bool publish_full_quaternion;
         bool enable_dynamic_update;
         bool use_mocap_to_initialize;
+        bool FIRST_IMU_MEASUREMENT;
         double mahalanobis_param;
 
         int accInitSampleCount;
@@ -68,6 +69,8 @@ namespace calibration{
 
         Eigen::Vector3d pnp_average_translation;
         Eigen::Vector3d pnp_average_euler;
+        Eigen::Vector3d w_k0;
+        Eigen::Vector3d s_k0;
 
         void nonLinearPropagation(Eigen::Vector3d omega, Eigen::Vector3d acceleration);
         void nonLinearUpdate();

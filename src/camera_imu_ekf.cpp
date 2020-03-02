@@ -23,6 +23,7 @@ namespace calibration{
             publish_expected_meas_(false),
             enable_partial_update_(true),
             initialized_timer(false)
+
     {
         nh_private.param<double>("estimator_dt", dt, 0.002);
         nh_private.param<int>("number_of_features", number_of_features, 16);
@@ -100,6 +101,7 @@ namespace calibration{
 
         pnp_average_translation.setZero();
         pnp_average_euler.setZero();
+        FIRST_IMU_MEASUREMENT = true;
 
 
     }
@@ -271,7 +273,6 @@ namespace calibration{
             ROS_WARN_STREAM("XHat post IMU initialization is  \n" <<xHat);
             ROS_WARN_STREAM("Gravity is  \n" <<getVectorMagnitude(accSampleAverage.x,accSampleAverage.y,accSampleAverage.z));
             ROS_WARN_STREAM("Accel components are  \n" <<accSampleAverage);
-
         }
 
     }
@@ -458,6 +459,7 @@ namespace calibration{
     }
 
     void CameraIMUEKF::nonLinearPropagation(Eigen::Vector3d omega, Eigen::Vector3d acceleration) {
+
         Eigen::Vector3d gravity(0,getVectorMagnitude(accSampleAverage.x,accSampleAverage.y,accSampleAverage.z),0);
         //Based on the derivation, gravity must be interpreted as the value needed to cancel the accel's gravity out
         //expressed in the inertial frame. Since the accel reports ~-9.8 , here gravity will be ~+9.8 in the corresponding axis.
@@ -514,35 +516,40 @@ namespace calibration{
 //        xHat.block<4,1>(0,0) =  q_W_to_I.coeffs();
 
 
-
+        if(FIRST_IMU_MEASUREMENT){
+            //This block initializes the previous values for the gyro and accel measurements.
+            FIRST_IMU_MEASUREMENT = false;
+            w_k0 = w_hat;
+            s_k0 = s_hat;
+            return;
+        }
         RK45integrate(w_hat,s_hat);
-
         P = P + (F * P + P * F.transpose() + G * Q * G.transpose()) * dt;
+        w_k0 = w_hat;
+        s_k0 = s_hat;
     }
 
     void CameraIMUEKF::RK45integrate(Eigen::Vector3d w_hat, Eigen::Vector3d s_hat){
         // Following equations from http://maths.cnam.fr/IMG/pdf/RungeKuttaFehlbergProof.pdf
         //step size is assumed to be dt
         double h = dt;
-        Eigen::MatrixXd k1, k2, k3, k4, k5,k6;
+        Eigen::MatrixXd k1,k2,k3,k4;
 
         k1 = integration_function(xHat, 0.0, w_hat, s_hat);
-        k1 *= h;
 
-        k2 = integration_function(xHat + 0.5*k1, 0.0, w_hat, s_hat);
-        k2 *=h;
+        k2 = integration_function(xHat + 0.5*k1*h, h/2, w_hat, s_hat);
 
-        k3 = integration_function(xHat + 0.5*k2, 0.0, w_hat, s_hat);
-        k3 *=h;
+        k3 = integration_function(xHat + 0.5*k2*h, h/2, w_hat, s_hat);
 
-        k4 = integration_function(xHat + k3, 0.0, w_hat, s_hat);
-        k4 *=h;
+        k4 = integration_function(xHat + k3*h, h, w_hat, s_hat);
 
-        xHat = xHat + (k1 + 2*k2 + 2*k3 + k4)*(1/6);
-        //Re-Normalize quaternion attitude
-        Eigen::Quaterniond attitude_to_normalize = Eigen::Quaterniond (xHat.block<4,1>(QX,0));
-        attitude_to_normalize.normalize();
-        xHat.block<4,1>(QX,0) = attitude_to_normalize.coeffs();
+        Eigen::MatrixXd increment(23,1);
+        increment = (k1 + 2*k2 + 2*k3 + k4)*(1./6)*h;
+        xHat = xHat + increment;
+
+        Eigen::Quaterniond q_W_to_I = Eigen::Quaterniond (xHat.block<4,1>(QX,0));
+        q_W_to_I.normalize();
+        xHat.block<4,1>(QX,0) = q_W_to_I.coeffs();
 //        integration_function(xHat + 0.25 * k1, k2, 0.0);
 //        k2 *=h;
 //
@@ -563,6 +570,12 @@ namespace calibration{
 
     Eigen::MatrixXd CameraIMUEKF::integration_function( Eigen::MatrixXd x, const double t, Eigen::Vector3d w_hat,Eigen::Vector3d s_hat)
     {
+        //Interpolate w and s here
+        Eigen::Vector3d w;
+        Eigen::Vector3d s;
+        w = w_k0 + (w_hat - w_k0)*(t/dt);
+        s = s_k0 + (s_hat - s_k0)*(t/dt);
+
         Eigen::Vector3d gravity(0,getVectorMagnitude(accSampleAverage.x,accSampleAverage.y,accSampleAverage.z),0);
         Eigen::Quaterniond q_W_to_I;
         q_W_to_I.vec() << x(QX), x(QY), x(QZ);
@@ -579,14 +592,15 @@ namespace calibration{
         imu_to_camera_quat.w() = x(Q_IW);
         Eigen::Matrix4d Omega_matrix;
         Omega_matrix.setZero();
-        Omega_matrix.topLeftCorner<3,3>() = -1*(reef_msgs::skew(w_hat));
-        Omega_matrix.block<3,1>(0,3) = w_hat;
-        Omega_matrix.block<1,3>(3,0) = -w_hat.transpose();
+        Omega_matrix.topLeftCorner<3,3>() = -1*(reef_msgs::skew(w));
+        Omega_matrix.block<3,1>(0,3) = w;
+        Omega_matrix.block<1,3>(3,0) = -w.transpose();
 
         Eigen::MatrixXd dxdt = Eigen::MatrixXd::Zero(23,1);
-        Eigen::Quaterniond q_W_to_I_dot = Eigen::Quaterniond((0.5 * Omega_matrix * q_W_to_I.coeffs()));
+        Eigen::Quaterniond q_W_to_I_dot;
+        q_W_to_I_dot.coeffs() = 0.5 * Omega_matrix * q_W_to_I.coeffs();
         dxdt.block<4,1>(QX,0) = q_W_to_I_dot.coeffs();
-        dxdt.block<3,1>(U,0) = q_W_to_I.toRotationMatrix() * s_hat + gravity;
+        dxdt.block<3,1>(U,0) = q_W_to_I.toRotationMatrix() * s + gravity;
         dxdt.block<3,1>(PX,0) =  velocity_W;
         return dxdt;
     }
