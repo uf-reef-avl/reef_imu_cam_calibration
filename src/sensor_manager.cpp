@@ -7,13 +7,13 @@ namespace calibration{
 
     SensorManager::SensorManager() : private_nh_("~"), nh_(""), num_pose(0){
 
-        corner_subscriber = nh_.subscribe("/ar_single_board/corner", 1, &SensorManager::cornerCallback, this);
+        corner_subscriber = nh_.subscribe("corner", 1, &SensorManager::cornerCallback, this);
         initial_pose_subscriber = nh_.subscribe("/calib_truth", 1, &SensorManager::initialPoseCallback, this);
         imu_subscriber_ = nh_.subscribe("imu/data", 1, &SensorManager::imuCallback, this);
         camera_info_subscriber = nh_.subscribe("camera/rgb/camera_info", 1, &SensorManager::cameraInfoCallback,this);
     }
 
-    void SensorManager::cornerCallback(const ar_sys::ArucoCornerMsg &msg) {
+    void SensorManager::cornerCallback(const charuco_ros::CharucoCornerMsg &msg) {
         if(calib_obj.got_camera_parameters)
             calib_obj.sensorUpdate(msg);
     }

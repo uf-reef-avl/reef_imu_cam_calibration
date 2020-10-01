@@ -15,10 +15,9 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   sensor_msgs
         tf2_eigen
-        ar_sys
         message_filters
         message_generation
-
+        charuco_ros
 )
 
 find_package(Eigen3 REQUIRED)
@@ -38,7 +37,7 @@ generate_messages(
 catkin_package(
         INCLUDE_DIRS
         LIBRARIES
-        CATKIN_DEPENDS roscpp rospy ar_sys sensor_msgs geometry_msgs sensor_msgs tf2_eigen
+        CATKIN_DEPENDS roscpp rospy charuco_ros sensor_msgs geometry_msgs sensor_msgs tf2_eigen
 )
 
 include_directories(include ${catkin_INCLUDE_DIRS})

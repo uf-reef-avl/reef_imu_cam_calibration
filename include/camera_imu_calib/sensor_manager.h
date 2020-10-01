@@ -10,7 +10,7 @@
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/CameraInfo.h>
 #include <geometry_msgs/Pose.h>
-#include <ar_sys/ArucoCornerMsg.h>
+#include <charuco_ros/CharucoCornerMsg.h>
 #include <opencv2/core.hpp>
 #include <tf2_eigen/tf2_eigen.h>
 
@@ -33,7 +33,7 @@ namespace calibration{
         ros::Subscriber camera_info_subscriber;
 
         void imuCallback(const sensor_msgs::ImuConstPtr &msg);
-        void cornerCallback(const ar_sys::ArucoCornerMsg &msg);
+        void cornerCallback(const charuco_ros::CharucoCornerMsg &msg);
         void initialPoseCallback(const camera_imu_calib::IMUCalibrationConstPtr  &msg);
         void cameraInfoCallback(const sensor_msgs::CameraInfo &msg);
 
@@ -49,7 +49,7 @@ namespace calibration{
         geometry_msgs::Pose mocap_board;
         geometry_msgs::Pose mocap_imu;
         geometry_msgs::Pose aruco_msg;
-        ar_sys::ArucoCornerMsg corner_msg;
+        charuco_ros::CharucoCornerMsg corner_msg;
 
     };
 }

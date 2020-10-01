@@ -16,8 +16,8 @@
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/CameraInfo.h>
 #include <reef_msgs/XYZDebugEstimate.h>
-#include <ar_sys/ArucoCornerMsg.h>
-#include <ar_sys/SingleCorner.h>
+#include <charuco_ros/CharucoCornerMsg.h>
+#include <charuco_ros/SingleCorner.h>
 #include <camera_imu_calib/ExpectedMeasurement.h>
 
 #include <opencv2/core.hpp>
@@ -74,9 +74,9 @@ namespace calibration{
 
         void nonLinearPropagation(Eigen::Vector3d omega, Eigen::Vector3d acceleration);
         void nonLinearUpdate();
-        void aruco_helper(ar_sys::SingleCorner metric_corner, ar_sys::SingleCorner pixel_corner, unsigned int index, unsigned int position);
+        void aruco_helper(charuco_ros::SingleCorner metric_corner, charuco_ros::SingleCorner pixel_corner, unsigned int index, unsigned int position);
         void initializeAcc(geometry_msgs::Vector3 acc, geometry_msgs::Vector3 gyro);
-        void initializePNP(ar_sys::ArucoCornerMsg aruco_corners);
+        void initializePNP(charuco_ros::CharucoCornerMsg charuco_corners);
         void getCamParams(const sensor_msgs::CameraInfo& cam_info);
         Eigen::MatrixXd  integration_function(Eigen::MatrixXd x, const double t,Eigen::Vector3d w, Eigen::Vector3d s);
         void RK45integrate(Eigen::Vector3d w, Eigen::Vector3d s);
@@ -122,7 +122,7 @@ namespace calibration{
         bool got_camera_parameters;
 
         void sensorUpdate(sensor_msgs::Imu imu);
-        void sensorUpdate(ar_sys::ArucoCornerMsg aruco_corners);
+        void sensorUpdate(charuco_ros::CharucoCornerMsg aruco_corners);
         void getCameraInfo(const sensor_msgs::CameraInfo &msg);
         void getInitialPose(camera_imu_calib::IMUCalibration msg);
 

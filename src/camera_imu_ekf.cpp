@@ -108,7 +108,7 @@ namespace calibration{
 
     CameraIMUEKF::~CameraIMUEKF() {}
 
-    void CameraIMUEKF::initializePNP(ar_sys::ArucoCornerMsg aruco_corners) {
+    void CameraIMUEKF::initializePNP(charuco_ros::CharucoCornerMsg aruco_corners) {
 
 
         int num_of_markers = aruco_corners.pixel_corners.size();
@@ -121,17 +121,17 @@ namespace calibration{
         for(int i = 0; i <num_of_markers; i++)
         {
             int index = i;
-            objPnts.push_back(cv::Point3f(aruco_corners.metric_corners[index].top_left.x, aruco_corners.metric_corners[index].top_left.y, aruco_corners.metric_corners[index].top_left.z ));
-            imgPnts.push_back(cv::Point2f(aruco_corners.pixel_corners[index].top_left.x, aruco_corners.pixel_corners[index].top_left.y));
+            objPnts.push_back(cv::Point3f(aruco_corners.metric_corners[index].corner.x, aruco_corners.metric_corners[index].corner.y, aruco_corners.metric_corners[index].corner.z ));
+            imgPnts.push_back(cv::Point2f(aruco_corners.pixel_corners[index].corner.x, aruco_corners.pixel_corners[index].corner.y));
 
-            objPnts.push_back(cv::Point3f(aruco_corners.metric_corners[index].top_right.x, aruco_corners.metric_corners[index].top_right.y, aruco_corners.metric_corners[index].top_right.z ));
-            imgPnts.push_back(cv::Point2f(aruco_corners.pixel_corners[index].top_right.x, aruco_corners.pixel_corners[index].top_right.y));
-
-            objPnts.push_back(cv::Point3f(aruco_corners.metric_corners[index].bottom_right.x, aruco_corners.metric_corners[index].bottom_right.y, aruco_corners.metric_corners[index].bottom_right.z ));
-            imgPnts.push_back(cv::Point2f(aruco_corners.pixel_corners[index].bottom_right.x, aruco_corners.pixel_corners[index].bottom_right.y));
-
-            objPnts.push_back(cv::Point3f(aruco_corners.metric_corners[index].bottom_left.x, aruco_corners.metric_corners[index].bottom_left.y, aruco_corners.metric_corners[index].bottom_left.z ));
-            imgPnts.push_back(cv::Point2f(aruco_corners.pixel_corners[index].bottom_left.x, aruco_corners.pixel_corners[index].bottom_left.y));
+//            objPnts.push_back(cv::Point3f(aruco_corners.metric_corners[index].top_right.x, aruco_corners.metric_corners[index].top_right.y, aruco_corners.metric_corners[index].top_right.z ));
+//            imgPnts.push_back(cv::Point2f(aruco_corners.pixel_corners[index].top_right.x, aruco_corners.pixel_corners[index].top_right.y));
+//
+//            objPnts.push_back(cv::Point3f(aruco_corners.metric_corners[index].bottom_right.x, aruco_corners.metric_corners[index].bottom_right.y, aruco_corners.metric_corners[index].bottom_right.z ));
+//            imgPnts.push_back(cv::Point2f(aruco_corners.pixel_corners[index].bottom_right.x, aruco_corners.pixel_corners[index].bottom_right.y));
+//
+//            objPnts.push_back(cv::Point3f(aruco_corners.metric_corners[index].bottom_left.x, aruco_corners.metric_corners[index].bottom_left.y, aruco_corners.metric_corners[index].bottom_left.z ));
+//            imgPnts.push_back(cv::Point2f(aruco_corners.pixel_corners[index].bottom_left.x, aruco_corners.pixel_corners[index].bottom_left.y));
         }
 
         cv::Mat objPoints, imgPoints;
@@ -217,14 +217,14 @@ namespace calibration{
 
     void CameraIMUEKF::getCameraInfo(const sensor_msgs::CameraInfo &msg){
 
-//        fx = msg.K[0];
-//        fy = msg.K[4];
-//        cx = msg.K[2];
-//        cy = msg.K[5];
-        fx = 601.9158860083387;
-        fy = 601.0928580130748;
-        cx = 330.9877128566246;
-        cy = 240.1798253357238;
+        fx = msg.K[0];
+        fy = msg.K[4];
+        cx = msg.K[2];
+        cy = msg.K[5];
+//        fx = 601.9158860083387;
+//        fy = 601.0928580130748;
+//        cx = 330.9877128566246;
+//        cy = 240.1798253357238;
         getCamParams(msg);
         got_camera_parameters = true;
     }
@@ -349,7 +349,7 @@ namespace calibration{
 
     }
 
-    void CameraIMUEKF::sensorUpdate(ar_sys::ArucoCornerMsg aruco_corners) {
+    void CameraIMUEKF::sensorUpdate(charuco_ros::CharucoCornerMsg aruco_corners) {
 
         if(aruco_corners.pixel_corners.size() != number_of_features/4)
             return;
@@ -363,10 +363,10 @@ namespace calibration{
         expected_measurement.setZero();
 
         for(unsigned int i =0; i < aruco_corners.metric_corners.size(); i++){
-            aruco_helper(aruco_corners.metric_corners[i].top_left, aruco_corners.pixel_corners[i].top_left, i, TOP_LEFT);
-            aruco_helper(aruco_corners.metric_corners[i].top_right, aruco_corners.pixel_corners[i].top_right, i, TOP_RIGHT);
-            aruco_helper(aruco_corners.metric_corners[i].bottom_right, aruco_corners.pixel_corners[i].bottom_right, i, BOTTOM_RIGHT);
-            aruco_helper(aruco_corners.metric_corners[i].bottom_left, aruco_corners.pixel_corners[i].bottom_left, i, BOTTOM_LEFT);
+            aruco_helper(aruco_corners.metric_corners[i].corner, aruco_corners.pixel_corners[i].corner, i, TOP_LEFT);
+//            aruco_helper(aruco_corners.metric_corners[i].corner, aruco_corners.pixel_corners[i].top_right, i, TOP_RIGHT);
+//            aruco_helper(aruco_corners.metric_corners[i].corner, aruco_corners.pixel_corners[i].bottom_right, i, BOTTOM_RIGHT);
+//            aruco_helper(aruco_corners.metric_corners[i].corner, aruco_corners.pixel_corners[i].bottom_left, i, BOTTOM_LEFT);
         }
 
         if(publish_expected_meas_){
@@ -391,7 +391,7 @@ namespace calibration{
         got_measurement = true;
     }
 
-    void CameraIMUEKF::aruco_helper(ar_sys::SingleCorner metric_corner, ar_sys::SingleCorner pixel_corner,
+    void CameraIMUEKF::aruco_helper(charuco_ros::SingleCorner metric_corner, charuco_ros::SingleCorner pixel_corner,
                                     unsigned int index, unsigned int position) {
 
        Eigen::Quaterniond q_W_to_I;
