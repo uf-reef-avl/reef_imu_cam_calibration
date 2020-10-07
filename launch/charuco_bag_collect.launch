@@ -1,0 +1,93 @@
+<launch>
+
+    <arg name="record_bag" default="true"/>
+    <arg name="bag_name" default="test"/>
+    <arg name="driver_astra" value="false"/>
+    <arg name="driver_openni2" value="false"/>
+    <arg name="driver_flir" value="true"/>
+
+    <group if="$(arg driver_astra)">
+        <include file="$(find astra_launch)/launch/astra_pro.launch"/>
+        <arg name="camera_info" default="file://$(env HOME)/.ros/camera_info/rgb_Astra_Orbbec.yaml"/>
+    </group>
+
+    <group if="$(arg driver_openni2)">
+        <include file="$(find openni2_launch)/launch/openni2.launch"/>
+    </group>
+
+    <group if="$(arg driver_flir)">
+        <include file="$(find charuco_ros)/launch/flir_camera_driver.launch"/>
+    </group>
+
+    <arg name="result_display" default="false"/>
+    <arg name="result_autosize" default="true"/>
+    <arg name="result_draw_markers" default="true" />
+    <arg name="result_draw_axis" default="true" />
+    <arg name="publish_corners" default="true" />
+    <arg name="publish_tf" default="true" />
+    <arg name="marker_length" default="true" />
+    <arg name="square_length" default="true" />
+    <arg name="x_square" default="true" />
+    <arg name="y_square" default="true" />
+    <arg name="num_marker" default="true" />
+    <arg name="dictionary_id" default="true" />
+
+    <node ns="/" pkg="charuco_ros" type="node" name="charuco_node" output="screen">
+        <remap from="/camera_info" to="/camera/rgb/camera_info" if="$(arg driver_astra)"/>
+        <remap from="/image" to="/camera/rgb/image_raw" if="$(arg driver_astra)"/>
+        <remap from="/camera_info" to="/camera/rgb/camera_info" if="$(arg driver_openni2)"/>
+        <remap from="/image" to="/camera/rgb/image_raw" if="$(arg driver_openni2)"/>
+        <param name="draw_markers" type="bool" value="$(arg result_draw_markers)" />
+        <param name="draw_axis" type="bool" value="$(arg result_draw_axis)" />
+        <param name="publish_tf" value="$(arg publish_tf)" />
+        <param name="publish_corners" value="$(arg publish_corners)" />
+        <param name="marker_length" value="$(arg marker_length)" />
+        <param name="square_length" value="$(arg square_length)" />
+        <param name="x_square" value="$(arg x_square)" />
+        <param name="y_square" value="$(arg y_square)" />
+        <param name="num_marker" value="$(arg num_marker)" />
+        <param name="dictionary_id" value="$(arg dictionary_id)" />
+    </node><arg name="result_display" default="false"/>
+    <arg name="result_autosize" default="true"/>
+    <arg name="result_draw_markers" default="true" />
+    <arg name="result_draw_axis" default="true" />
+    <arg name="publish_corners" default="true" />
+    <arg name="publish_tf" default="true" />
+    <arg name="marker_length" default="true" />
+    <arg name="square_length" default="true" />
+    <arg name="x_square" default="true" />
+    <arg name="y_square" default="true" />
+    <arg name="num_marker" default="true" />
+    <arg name="dictionary_id" default="true" />
+
+    <node ns="/" pkg="charuco_ros" type="node" name="charuco_node" output="screen">
+        <remap from="/camera_info" to="/camera/rgb/camera_info" if="$(arg driver_astra)"/>
+        <remap from="/image" to="/camera/rgb/image_raw" if="$(arg driver_astra)"/>
+        <remap from="/camera_info" to="/camera/rgb/camera_info" if="$(arg driver_openni2)"/>
+        <remap from="/image" to="/camera/rgb/image_raw" if="$(arg driver_openni2)"/>
+        <param name="draw_markers" type="bool" value="$(arg result_draw_markers)" />
+        <param name="draw_axis" type="bool" value="$(arg result_draw_axis)" />
+        <param name="publish_tf" value="$(arg publish_tf)" />
+        <param name="publish_corners" value="$(arg publish_corners)" />
+        <param name="marker_length" value="$(arg marker_length)" />
+        <param name="square_length" value="$(arg square_length)" />
+        <param name="x_square" value="$(arg x_square)" />
+        <param name="y_square" value="$(arg y_square)" />
+        <param name="num_marker" value="$(arg num_marker)" />
+        <param name="dictionary_id" value="$(arg dictionary_id)" />
+    </node>
+
+    <node if="$(arg result_display)" ns="/" pkg="image_view" type="image_view" name="image_view" output="screen">
+        <!--            <remap from="image" to="/camera/rgb/image_raw" />-->
+        <remap from="image" to="/charuco_ros/result" />
+        <param name="autosize" type="bool" value="$(arg result_autosize)" />
+    </node>
+
+    <node pkg="ros_vrpn_client" name="lever_arm" type="ros_vrpn_client" args="_vrpn_server_ip:=192.168.1.104" required="true" output="screen"/>
+
+    <node pkg="ros_vrpn_client" name="calibration_board" type="ros_vrpn_client" args="_vrpn_server_ip:=192.168.1.104" required="true" output="screen"/>
+
+
+    <node if="$(arg record_bag)" name="record" pkg="rosbag" type="record" args="-O $(arg bag_name) charuco_ros/corner charuco_ros/pose camera/image_raw camera/rgb/camera_info imu/data $(arg vehicle)/ned/pose_stamped tf_calib/ned/pose_stamped"/>
+
+</launch>
