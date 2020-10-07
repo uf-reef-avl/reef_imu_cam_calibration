@@ -7,7 +7,7 @@ namespace calibration{
 
     SensorManager::SensorManager() : private_nh_("~"), nh_(""), num_pose(0){
 
-        corner_subscriber = nh_.subscribe("corner", 1, &SensorManager::cornerCallback, this);
+        corner_subscriber = nh_.subscribe("/charuco_ros/corner", 1, &SensorManager::cornerCallback, this);
         initial_pose_subscriber = nh_.subscribe("/calib_truth", 1, &SensorManager::initialPoseCallback, this);
         imu_subscriber_ = nh_.subscribe("imu/data", 1, &SensorManager::imuCallback, this);
         camera_info_subscriber = nh_.subscribe("camera/rgb/camera_info", 1, &SensorManager::cameraInfoCallback,this);

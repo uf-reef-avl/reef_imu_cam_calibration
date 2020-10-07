@@ -29,11 +29,6 @@
 
 #include <camera_imu_calib/IMUCalibration.h>
 
-#define TOP_LEFT 0
-#define TOP_RIGHT 2
-#define BOTTOM_RIGHT 4
-#define BOTTOM_LEFT 6
-
 #define ACC_SAMPLE_SIZE 2000
 #define CORNER_SAMPLE_SIZE 100
 
@@ -74,7 +69,7 @@ namespace calibration{
 
         void nonLinearPropagation(Eigen::Vector3d omega, Eigen::Vector3d acceleration);
         void nonLinearUpdate();
-        void aruco_helper(charuco_ros::SingleCorner metric_corner, charuco_ros::SingleCorner pixel_corner, unsigned int index, unsigned int position);
+        void aruco_helper(charuco_ros::SingleCorner metric_corner, charuco_ros::SingleCorner pixel_corner, unsigned int index);
         void initializeAcc(geometry_msgs::Vector3 acc, geometry_msgs::Vector3 gyro);
         void initializePNP(charuco_ros::CharucoCornerMsg charuco_corners);
         void getCamParams(const sensor_msgs::CameraInfo& cam_info);

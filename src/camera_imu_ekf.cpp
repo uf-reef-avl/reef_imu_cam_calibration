@@ -18,7 +18,7 @@ namespace calibration{
             accInitSampleCount(0),
             cornerSampleCount(false),
             fx(0),fy(0),cx(0),cy(0),
-            number_of_features(16),
+            number_of_features(0),
             publish_full_quaternion(false),
             publish_expected_meas_(false),
             enable_partial_update_(true),
@@ -26,7 +26,7 @@ namespace calibration{
 
     {
         nh_private.param<double>("estimator_dt", dt, 0.002);
-        nh_private.param<int>("number_of_features", number_of_features, 16);
+        nh_private.param<int>("number_of_features", number_of_features, 15);
         nh_private.param<bool>("publish_full_quaternion", publish_full_quaternion, true);
         nh_private.param<bool>("publish_expected_meas", publish_expected_meas_, true);
         nh_private.param<bool>("enable_partial_update", enable_partial_update_, true);
@@ -110,28 +110,17 @@ namespace calibration{
 
     void CameraIMUEKF::initializePNP(charuco_ros::CharucoCornerMsg aruco_corners) {
 
-
         int num_of_markers = aruco_corners.pixel_corners.size();
 
         std::vector< cv::Point3f > objPnts;
-        objPnts.reserve(4 * num_of_markers);
+        objPnts.reserve(num_of_markers);
         std::vector< cv::Point2f > imgPnts;
-        imgPnts.reserve(4 * num_of_markers);
+        imgPnts.reserve(num_of_markers);
 
         for(int i = 0; i <num_of_markers; i++)
         {
-            int index = i;
-            objPnts.push_back(cv::Point3f(aruco_corners.metric_corners[index].corner.x, aruco_corners.metric_corners[index].corner.y, aruco_corners.metric_corners[index].corner.z ));
-            imgPnts.push_back(cv::Point2f(aruco_corners.pixel_corners[index].corner.x, aruco_corners.pixel_corners[index].corner.y));
-
-//            objPnts.push_back(cv::Point3f(aruco_corners.metric_corners[index].top_right.x, aruco_corners.metric_corners[index].top_right.y, aruco_corners.metric_corners[index].top_right.z ));
-//            imgPnts.push_back(cv::Point2f(aruco_corners.pixel_corners[index].top_right.x, aruco_corners.pixel_corners[index].top_right.y));
-//
-//            objPnts.push_back(cv::Point3f(aruco_corners.metric_corners[index].bottom_right.x, aruco_corners.metric_corners[index].bottom_right.y, aruco_corners.metric_corners[index].bottom_right.z ));
-//            imgPnts.push_back(cv::Point2f(aruco_corners.pixel_corners[index].bottom_right.x, aruco_corners.pixel_corners[index].bottom_right.y));
-//
-//            objPnts.push_back(cv::Point3f(aruco_corners.metric_corners[index].bottom_left.x, aruco_corners.metric_corners[index].bottom_left.y, aruco_corners.metric_corners[index].bottom_left.z ));
-//            imgPnts.push_back(cv::Point2f(aruco_corners.pixel_corners[index].bottom_left.x, aruco_corners.pixel_corners[index].bottom_left.y));
+            objPnts.push_back(cv::Point3f(aruco_corners.metric_corners[i].corner.x, aruco_corners.metric_corners[i].corner.y, aruco_corners.metric_corners[i].corner.z ));
+            imgPnts.push_back(cv::Point2f(aruco_corners.pixel_corners[i].corner.x, aruco_corners.pixel_corners[i].corner.y));
         }
 
         cv::Mat objPoints, imgPoints;
@@ -221,10 +210,6 @@ namespace calibration{
         fy = msg.K[4];
         cx = msg.K[2];
         cy = msg.K[5];
-//        fx = 601.9158860083387;
-//        fy = 601.0928580130748;
-//        cx = 330.9877128566246;
-//        cy = 240.1798253357238;
         getCamParams(msg);
         got_camera_parameters = true;
     }
@@ -351,8 +336,10 @@ namespace calibration{
 
     void CameraIMUEKF::sensorUpdate(charuco_ros::CharucoCornerMsg aruco_corners) {
 
-        if(aruco_corners.pixel_corners.size() != number_of_features/4)
+        if(aruco_corners.pixel_corners.size() != number_of_features)
             return;
+
+        ROS_WARN_STREAM("Number of corners \t" << aruco_corners.pixel_corners.size());
 
         if(!initialized_pnp){
             initializePNP(aruco_corners);
@@ -362,12 +349,8 @@ namespace calibration{
         H.setZero();
         expected_measurement.setZero();
 
-        for(unsigned int i =0; i < aruco_corners.metric_corners.size(); i++){
-            aruco_helper(aruco_corners.metric_corners[i].corner, aruco_corners.pixel_corners[i].corner, i, TOP_LEFT);
-//            aruco_helper(aruco_corners.metric_corners[i].corner, aruco_corners.pixel_corners[i].top_right, i, TOP_RIGHT);
-//            aruco_helper(aruco_corners.metric_corners[i].corner, aruco_corners.pixel_corners[i].bottom_right, i, BOTTOM_RIGHT);
-//            aruco_helper(aruco_corners.metric_corners[i].corner, aruco_corners.pixel_corners[i].bottom_left, i, BOTTOM_LEFT);
-        }
+        for(unsigned int i =0; i < aruco_corners.metric_corners.size(); i++)
+            aruco_helper(aruco_corners.metric_corners[i].corner, aruco_corners.pixel_corners[i].corner, i);
 
         if(publish_expected_meas_){
             Eigen::MatrixXd S;
@@ -392,7 +375,7 @@ namespace calibration{
     }
 
     void CameraIMUEKF::aruco_helper(charuco_ros::SingleCorner metric_corner, charuco_ros::SingleCorner pixel_corner,
-                                    unsigned int index, unsigned int position) {
+                                    unsigned int index) {
 
        Eigen::Quaterniond q_W_to_I;
         q_W_to_I.vec() << xHat(QX), xHat(QY), xHat(QZ);
@@ -435,9 +418,9 @@ namespace calibration{
 //        feature_pixel_position_camera_frame <<  (h_hat(0)/h_hat(2)) ,
 //                                                (h_hat(1)/h_hat(2)) ;
 
-        expected_measurement.block<2,1>(8*index + position, 0) = feature_pixel_position_camera_frame;
+        expected_measurement.block<2,1>(2*index, 0) = feature_pixel_position_camera_frame;
         //Camera parameters in Jacobian
-        z.block<2,1>(8*index + position, 0) << pixel_corner.x , pixel_corner.y;
+        z.block<2,1>(2*index, 0) << pixel_corner.x , pixel_corner.y;
 //=================================================================================================
         //No cam parameters in Jacobian
 //        z.block<2,1>(8*index + position, 0) << (pixel_corner.x - cx)/fx, (pixel_corner.y - cy)/fy;
@@ -455,7 +438,7 @@ namespace calibration{
 //        partial_y_measure_p_fc = (1./(h_hat(2)*h_hat(2))) * partial_y_measure_p_fc;
 //==============================================================================================
         partial_x_measure << q_block, pos_block, zero_block, zero_block, zero_block, p_c_i_block, alpha_block;
-        H.block<2,21>(8*index + position,0)  = partial_y_measure_p_fc * partial_x_measure;
+        H.block<2,21>(2*index,0)  = partial_y_measure_p_fc * partial_x_measure;
     }
 
     void CameraIMUEKF::nonLinearPropagation(Eigen::Vector3d omega, Eigen::Vector3d acceleration) {
