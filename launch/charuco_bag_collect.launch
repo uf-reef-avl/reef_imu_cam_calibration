@@ -5,6 +5,9 @@
     <arg name="driver_astra" value="false"/>
     <arg name="driver_openni2" value="false"/>
     <arg name="driver_flir" value="true"/>
+    <arg name="display_expected_measurements" default="true"/>
+    <arg name="lever_arm_name" default="tf_calib"/>
+    <arg name="board_name" default="tf_board"/>
 
     <group if="$(arg driver_astra)">
         <include file="$(find astra_launch)/launch/astra_pro.launch"/>
@@ -16,8 +19,10 @@
     </group>
 
     <group if="$(arg driver_flir)">
-        <include file="$(find charuco_ros)/launch/flir_camera_driver.launch"/>
+        <include file="$(find charuco_ros)/launch/point_grey_driver.launch"/>
     </group>
+
+    <include file="$(find imu_vn_100)/launch/vn_100_cont.launch"/>
 
     <arg name="result_display" default="false"/>
     <arg name="result_autosize" default="true"/>
@@ -25,14 +30,15 @@
     <arg name="result_draw_axis" default="true" />
     <arg name="publish_corners" default="true" />
     <arg name="publish_tf" default="true" />
-    <arg name="marker_length" default="true" />
-    <arg name="square_length" default="true" />
-    <arg name="x_square" default="true" />
-    <arg name="y_square" default="true" />
-    <arg name="num_marker" default="true" />
-    <arg name="dictionary_id" default="true" />
+    <arg name="marker_length" default="0.025" />
+    <arg name="square_length" default="0.05" />
+    <arg name="x_square" default="6" />
+    <arg name="y_square" default="4" />
+    <arg name="num_marker" default="15" />
 
     <node ns="/" pkg="charuco_ros" type="node" name="charuco_node" output="screen">
+        <remap from="/camera_info" to="/camera/image_color" if="$(arg driver_flir)"/>
+        <remap from="/image" to="/camera/camera_info" if="$(arg driver_flir)"/>
         <remap from="/camera_info" to="/camera/rgb/camera_info" if="$(arg driver_astra)"/>
         <remap from="/image" to="/camera/rgb/image_raw" if="$(arg driver_astra)"/>
         <remap from="/camera_info" to="/camera/rgb/camera_info" if="$(arg driver_openni2)"/>
@@ -48,46 +54,31 @@
         <param name="num_marker" value="$(arg num_marker)" />
         <param name="dictionary_id" value="$(arg dictionary_id)" />
     </node><arg name="result_display" default="false"/>
-    <arg name="result_autosize" default="true"/>
-    <arg name="result_draw_markers" default="true" />
-    <arg name="result_draw_axis" default="true" />
-    <arg name="publish_corners" default="true" />
-    <arg name="publish_tf" default="true" />
-    <arg name="marker_length" default="true" />
-    <arg name="square_length" default="true" />
-    <arg name="x_square" default="true" />
-    <arg name="y_square" default="true" />
-    <arg name="num_marker" default="true" />
-    <arg name="dictionary_id" default="true" />
 
-    <node ns="/" pkg="charuco_ros" type="node" name="charuco_node" output="screen">
-        <remap from="/camera_info" to="/camera/rgb/camera_info" if="$(arg driver_astra)"/>
-        <remap from="/image" to="/camera/rgb/image_raw" if="$(arg driver_astra)"/>
-        <remap from="/camera_info" to="/camera/rgb/camera_info" if="$(arg driver_openni2)"/>
-        <remap from="/image" to="/camera/rgb/image_raw" if="$(arg driver_openni2)"/>
-        <param name="draw_markers" type="bool" value="$(arg result_draw_markers)" />
-        <param name="draw_axis" type="bool" value="$(arg result_draw_axis)" />
-        <param name="publish_tf" value="$(arg publish_tf)" />
-        <param name="publish_corners" value="$(arg publish_corners)" />
-        <param name="marker_length" value="$(arg marker_length)" />
-        <param name="square_length" value="$(arg square_length)" />
-        <param name="x_square" value="$(arg x_square)" />
-        <param name="y_square" value="$(arg y_square)" />
-        <param name="num_marker" value="$(arg num_marker)" />
-        <param name="dictionary_id" value="$(arg dictionary_id)" />
-    </node>
 
-    <node if="$(arg result_display)" ns="/" pkg="image_view" type="image_view" name="image_view" output="screen">
-        <!--            <remap from="image" to="/camera/rgb/image_raw" />-->
+    <node if="$(arg result_display)" ns="/" pkg="image_view" type="image_view" name="charuco_image_view" output="screen">
         <remap from="image" to="/charuco_ros/result" />
         <param name="autosize" type="bool" value="$(arg result_autosize)" />
     </node>
 
-    <node pkg="ros_vrpn_client" name="lever_arm" type="ros_vrpn_client" args="_vrpn_server_ip:=192.168.1.104" required="true" output="screen"/>
+    <node pkg="ros_vrpn_client" name="$(arg lever_arm_name)" type="ros_vrpn_client" args="_vrpn_server_ip:=192.168.1.104" required="true" output="screen"/>
 
-    <node pkg="ros_vrpn_client" name="calibration_board" type="ros_vrpn_client" args="_vrpn_server_ip:=192.168.1.104" required="true" output="screen"/>
+    <node pkg="ros_vrpn_client" name="$(arg board_name)" type="ros_vrpn_client" args="_vrpn_server_ip:=192.168.1.104" required="true" output="screen"/>
+
+    <node pkg="calib_truth" type="node" name="calib_truth" output="screen">
+            <remap from="board_pose" to="$(arg board_name)/ned/pose_stamped"/>
+            <remap from="imu_pose" to="$(arg lever_arm_name)/ned/pose_stamped"/>
+    </node>
+
+    <group if="$(arg display_expected_measurements)">
+        <node name="residual" pkg="camera_imu_calib" type="show_res" output="screen"/>
+        <node ns="/" pkg="image_view" type="image_view" name="show_resimage_view" output="screen">
+            <remap from="image" to="residual_image" />
+            <param name="autosize" type="bool" value="true" />
+        </node>
+    </group>
 
 
-    <node if="$(arg record_bag)" name="record" pkg="rosbag" type="record" args="-O $(arg bag_name) charuco_ros/corner charuco_ros/pose camera/image_raw camera/rgb/camera_info imu/data $(arg vehicle)/ned/pose_stamped tf_calib/ned/pose_stamped"/>
+    <node if="$(arg record_bag)" name="record" pkg="rosbag" type="record" args="-O $(arg bag_name) charuco_ros/corner charuco_ros/pose camera/image_raw camera/rgb/camera_info imu/data $(arg board_name)/ned/pose_stamped $(arg lever_arm_name)/ned/pose_stamped"/>
 
 </launch>
