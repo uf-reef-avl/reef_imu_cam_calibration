@@ -1,0 +1,38 @@
+/home/moa-nalo/clion-2020.2.4/bin/cmake/linux/bin/cmake -DCMAKE_BUILD_TYPE=Debug -G "CodeBlocks - Unix Makefiles" /home/moa-nalo/charuo_ws/src/camera_imu_calib
+-- Using CATKIN_DEVEL_PREFIX: /home/moa-nalo/charuo_ws/src/camera_imu_calib/cmake-build-debug/devel
+-- Using CMAKE_PREFIX_PATH: /opt/ros/melodic
+-- This workspace overlays: /opt/ros/melodic
+-- Found PythonInterp: /usr/bin/python2 (found suitable version "2.7.17", minimum required is "2") 
+-- Using PYTHON_EXECUTABLE: /usr/bin/python2
+-- Using Debian Python package layout
+-- Using empy: /usr/bin/empy
+-- Using CATKIN_ENABLE_TESTING: ON
+-- Call enable_testing()
+-- Using CATKIN_TEST_RESULTS_DIR: /home/moa-nalo/charuo_ws/src/camera_imu_calib/cmake-build-debug/test_results
+-- Found gtest sources under '/usr/src/googletest': gtests will be built
+-- Found gmock sources under '/usr/src/googletest': gmock will be built
+-- Found PythonInterp: /usr/bin/python2 (found version "2.7.17") 
+-- Using Python nosetests: /usr/bin/nosetests-2.7
+-- catkin 0.7.28
+-- BUILD_SHARED_LIBS is on
+-- Using these message generators: gencpp;geneus;genlisp;gennodejs;genpy
+-- Could NOT find charuco_ros (missing: charuco_ros_DIR)
+-- Could not find the required component 'charuco_ros'. The following CMake error indicates that you either need to install the package with the same name or change your environment so that it can be found.
+CMake Error at /opt/ros/melodic/share/catkin/cmake/catkinConfig.cmake:83 (find_package):
+  Could not find a package configuration file provided by "charuco_ros" with
+  any of the following names:
+
+    charuco_rosConfig.cmake
+    charuco_ros-config.cmake
+
+  Add the installation prefix of "charuco_ros" to CMAKE_PREFIX_PATH or set
+  "charuco_ros_DIR" to a directory containing one of the above files.  If
+  "charuco_ros" provides a separate development package or SDK, be sure it
+  has been installed.
+Call Stack (most recent call first):
+  CMakeLists.txt:10 (find_package)
+
+
+-- Configuring incomplete, errors occurred!
+See also "/home/moa-nalo/charuo_ws/src/camera_imu_calib/cmake-build-debug/CMakeFiles/CMakeOutput.log".
+See also "/home/moa-nalo/charuo_ws/src/camera_imu_calib/cmake-build-debug/CMakeFiles/CMakeError.log".

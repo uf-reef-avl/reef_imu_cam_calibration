@@ -1,0 +1,2 @@
+set(camera_imu_calib_MESSAGE_FILES "/home/moa-nalo/charuo_ws/src/camera_imu_calib/msg/IMUCalibration.msg;/home/moa-nalo/charuo_ws/src/camera_imu_calib/msg/ExpectedMeasurement.msg")
+set(camera_imu_calib_SERVICE_FILES "")

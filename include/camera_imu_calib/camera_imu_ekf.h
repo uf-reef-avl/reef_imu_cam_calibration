@@ -74,7 +74,7 @@ namespace calibration{
         void initializePNP(charuco_ros::CharucoCornerMsg charuco_corners);
         void getCamParams(const sensor_msgs::CameraInfo& cam_info);
         Eigen::MatrixXd  integration_function(Eigen::MatrixXd x, const double t,Eigen::Vector3d w, Eigen::Vector3d s);
-        void RK45integrate(Eigen::Vector3d w, Eigen::Vector3d s);
+        void RK45integrate(Eigen::Vector3d w, Eigen::Vector3d s,double step);
         bool chi2AcceptPixels();
 
         void publish_state();

@@ -1,0 +1,2 @@
+- setup-file:
+    local-name: /home/moa-nalo/charuo_ws/src/camera_imu_calib/cmake-build-debug/devel/setup.sh

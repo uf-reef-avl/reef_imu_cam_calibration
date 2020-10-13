@@ -10,7 +10,7 @@ project(camera_imu_calib)
 find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   nav_msgs
-  reef_msgs
+reef_msgs
   roscpp
   rospy
   sensor_msgs
@@ -32,12 +32,13 @@ generate_messages(
         DEPENDENCIES
         geometry_msgs
         std_msgs
+
 )
 
 catkin_package(
         INCLUDE_DIRS
         LIBRARIES
-        CATKIN_DEPENDS roscpp rospy charuco_ros sensor_msgs geometry_msgs sensor_msgs tf2_eigen
+        CATKIN_DEPENDS roscpp rospy charuco_ros sensor_msgs geometry_msgs sensor_msgs tf2_eigen reef_msgs
 )
 
 include_directories(include ${catkin_INCLUDE_DIRS})
