@@ -1,7 +1,7 @@
 <launch>
 
-    <arg name="record_bag" default="true"/>
-    <arg name="bag_name" default="cam_imu_102620_008"/>
+    <arg name="record_bag" default="false"/>
+    <arg name="bag_name" default="cam_imu_102620_009"/>
     <arg name="driver_astra" value="false"/>
     <arg name="driver_openni2" value="false"/>
     <arg name="driver_flir" value="true"/>

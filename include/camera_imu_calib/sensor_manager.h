@@ -37,7 +37,7 @@ namespace calibration{
         void cornerCallback(const charuco_ros::CharucoCornerMsg &msg);
         void initialPoseCallback(const camera_imu_calib::IMUCalibrationConstPtr  &msg);
         void cameraInfoCallback(const sensor_msgs::CameraInfo &msg);
-        void boardPoseCallback(const geometry_msgs::TransformStampedConstPtr  &msg);
+        void boardPoseCallback(const geometry_msgs::PoseStampedConstPtr &msg);
         CameraIMUEKF calib_obj;
         int num_pose;
 

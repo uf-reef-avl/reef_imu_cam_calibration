@@ -4,8 +4,8 @@
             0, 0, 0,
             0, 0, 0,
             0, 0, 0,
-            0.01, -0.105, 0.01,
-            0.5, 0.5, 0.5, 0.5],
+            -0.01, -0.105, -0.01,
+            0.4971707, 0.4963704, 0.4971707, 0.5091748],
 
     #  P0: [0.02, 0.02, 0.02, #Attitude
     #       0.05, 0.05, 0.05,    #Position
@@ -15,13 +15,13 @@
     #       0.05, 0.05, 0.05,     #Arm
     #       0.02, 0.02, 0.02],  #Offset Attitude`
 
-    P0: [0.002, 0.002, 0.002, #Attitude
+    P0: [0.001, 0.001, 0.001, #Attitude
          0.0025, 0.0025, 0.0025,    #Position
          0.0001, 0.0001, 0.0001, #Velocity
          0.0001, 0.0001, 0.0001,  #Bias Gyro
          0.0001, 0.0001, 0.0001,  #Bias Accel
-         0.0025, 0.0025, 0.0025,     #Arm
-         0.002, 0.002, 0.002],  #Offset Attitude
+         0.009, 0.009, 0.009,     #Arm
+         0.001, 0.001, 0.001],  #Offset Attitude
 
     #From Datasheet: Continuous time parameters
     # Gyro power spectral density = 0.005 deg/s/sqrt(Hz) = 0.000087267 rad/s/sqrt(Hz) [(1 sigma)] => (1 sigma^2) = 0.000000008
@@ -45,13 +45,13 @@
 
     R_std: [2],
 
-    beta: [0.9, 0.9, 0.9, #attitude
-           0.9, 0.9, 0.9 , #position
+    beta: [1, 1, 1, #attitude
+           1, 1, 1 , #position
            1, 1, 1,         #velocity
-           0.7, 0.7, 0.7, #gryo bias
-           0.7, 0.7, 0.7, #accel bias
-           0.05, 0.05, 0.05, #pc_i
-           0.05,0.05,0.05] #attitude offset
+           0.05, 0.05, 0.05, #gyro bias
+           0.05, 0.05, 0.05, #accel bias
+           0.1, 0.1, 0.1, #pc_i
+           0.25,0.25,0.25] #attitude offset
 
 
     #

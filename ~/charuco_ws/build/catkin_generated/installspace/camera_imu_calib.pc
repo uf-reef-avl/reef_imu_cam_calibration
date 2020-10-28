@@ -1,8 +1,0 @@
-prefix=/usr/local
-
-Name: camera_imu_calib
-Description: Description of camera_imu_calib
-Version: 0.0.0
-Cflags: -I${prefix}/include
-Libs: -L${prefix}/lib 
-Requires: roscpp rospy charuco_ros sensor_msgs geometry_msgs sensor_msgs tf2_eigen reef_msgs

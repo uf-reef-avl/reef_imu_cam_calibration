@@ -1,1 +1,0 @@
-set(ORDERED_PATHS "/home/moa-nalo/charuco_ws/devel/lib;/opt/ros/melodic/lib")

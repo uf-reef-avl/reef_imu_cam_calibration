@@ -123,7 +123,7 @@ namespace calibration{
         void sensorUpdate(charuco_ros::CharucoCornerMsg aruco_corners);
         void getCameraInfo(const sensor_msgs::CameraInfo &msg);
         void getInitialPose(camera_imu_calib::IMUCalibration msg);
-        void getBoardPose(geometry_msgs::TransformStamped msg);
+        void getBoardPose(geometry_msgs::PoseStamped msg);
 
     };
 

@@ -79,7 +79,7 @@ namespace calibration{
         reef_msgs::importMatrixFromParamServer(nh_private, R_std, "R_std");
         reef_msgs::importMatrixFromParamServer(nh_private, betaVector, "beta");
 
-        Q = Q*0.01;
+//        Q = Q*0.01;
 
         double R_std_float; // Set to 1 as default.
         R_std_float = R_std(0,0);
@@ -194,9 +194,6 @@ namespace calibration{
                 world_to_imu_quat = initial_imu_q;
                 world_to_imu_pose = initial_imu_position;
             }
-
-
-
             xHat.block<3,1>(QX,0) = world_to_imu_quat.vec();
             xHat(QW,0) = world_to_imu_quat.w();
             xHat.block<3,1>(PX,0) = world_to_imu_pose;
@@ -426,7 +423,7 @@ namespace calibration{
 
     void CameraIMUEKF::nonLinearPropagation(Eigen::Vector3d omega, Eigen::Vector3d acceleration) {
 
-        Eigen::Vector3d gravity(0,0,getVectorMagnitude(accSampleAverage.x,accSampleAverage.y,accSampleAverage.z));
+        Eigen::Vector3d gravity(0,0,9.81);
         gravity = reef_msgs::quaternion_to_rotation(initial_board_q)*gravity;
         //Based on the derivation, gravity must be interpreted as the value needed to cancel the accel's gravity out
         //expressed in the inertial frame. Since the accel reports ~-9.8 , here gravity will be ~+9.8 in the corresponding axis.
@@ -492,7 +489,7 @@ namespace calibration{
         }
 
 
-        int steps = 20;
+        int steps = 2;
         RK45integrate(omega,acceleration,steps);
 
 
@@ -521,7 +518,7 @@ namespace calibration{
             ic.block<4,1>(QX,0) = q_Ik_I.coeffs();
         }
         //Re-Construct original states
-        Eigen::Vector3d gravity(0,0,getVectorMagnitude(accSampleAverage.x,accSampleAverage.y,accSampleAverage.z));
+        Eigen::Vector3d gravity(0,0,9.81);
         gravity = reef_msgs::quaternion_to_rotation(initial_board_q)*gravity;
         Eigen::Quaterniond q_W_to_I;
         Eigen::Vector3d world_to_imu_position(xHat(PX), xHat(PY), xHat(PZ));
@@ -546,7 +543,7 @@ namespace calibration{
         w = w_k0 + (omega - w_k0)*(t/dt) - xHat.block<3,1>(BWX,0);
         s = s_k0 + (acceleration - s_k0)*(t/dt) - xHat.block<3,1>(BAX,0);
 
-        Eigen::Vector3d gravity(0,0,getVectorMagnitude(accSampleAverage.x,accSampleAverage.y,accSampleAverage.z));
+        Eigen::Vector3d gravity(0,0,9.81);
         gravity = reef_msgs::quaternion_to_rotation(initial_board_q)*gravity;
         Eigen::Quaterniond q_Ik_to_I;
         q_Ik_to_I.vec() << x(QX), x(QY), x(QZ);
@@ -720,10 +717,10 @@ namespace calibration{
         initial_imu_position << msg.world_to_imu.position.x,msg.world_to_imu.position.y,msg.world_to_imu.position.z;
     }
 
-    void CameraIMUEKF::getBoardPose(geometry_msgs::TransformStamped msg){
-        initial_board_q.vec() << msg.transform.rotation.x,msg.transform.rotation.y,msg.transform.rotation.z;
-        initial_board_q.w() = msg.transform.rotation.w;
-        initial_board_position << msg.transform.translation.x, msg.transform.translation.y,msg.transform.translation.z;
+    void CameraIMUEKF::getBoardPose(geometry_msgs::PoseStamped msg){
+        initial_board_q.vec() << msg.pose.orientation.x,msg.pose.orientation.y,msg.pose.orientation.z;
+        initial_board_q.w() = msg.pose.orientation.w;
+        initial_board_position << msg.pose.position.x, msg.pose.position.y, msg.pose.position.z;
     }
 
     bool CameraIMUEKF::chi2AcceptPixels()
