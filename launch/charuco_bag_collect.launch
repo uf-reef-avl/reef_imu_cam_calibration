@@ -1,26 +1,28 @@
 <launch>
 
     <arg name="record_bag" default="true"/>
-    <arg name="bag_name" default="test"/>
+    <arg name="bag_name" default="cam_imu_102620_008"/>
     <arg name="driver_astra" value="false"/>
     <arg name="driver_openni2" value="false"/>
     <arg name="driver_flir" value="true"/>
     <arg name="display_expected_measurements" default="true"/>
-    <arg name="lever_arm_name" default="tf_calib"/>
+    <arg name="lever_arm_name" default="tf_imu"/>
     <arg name="board_name" default="tf_board"/>
+    <arg name="run_estimator" value="false"/>
 
-    <group if="$(arg driver_astra)">
-        <include file="$(find astra_launch)/launch/astra_pro.launch"/>
-        <arg name="camera_info" default="file://$(env HOME)/.ros/camera_info/rgb_Astra_Orbbec.yaml"/>
-    </group>
+<!--    <group if="$(arg driver_astra)">-->
+<!--        <include file="$(find astra_launch)/launch/astra_pro.launch"/>-->
+<!--        <arg name="camera_info" default="file://$(env HOME)/.ros/camera_info/rgb_Astra_Orbbec.yaml"/>-->
+<!--    </group>-->
 
-    <group if="$(arg driver_openni2)">
-        <include file="$(find openni2_launch)/launch/openni2.launch"/>
-    </group>
+<!--    <group if="$(arg driver_openni2)">-->
+<!--        <include file="$(find openni2_launch)/launch/openni2.launch"/>-->
+<!--    </group>-->
 
     <group if="$(arg driver_flir)">
         <include file="$(find charuco_ros)/launch/point_grey_driver.launch"/>
     </group>
+    <node name="dynamic_reconfigure_load" pkg="dynamic_reconfigure" type="dynparam" args="load /camera/camera_nodelet $(find charuco_ros)/params/point_grey_cfg.yaml" />
 
     <include file="$(find imu_vn_100)/launch/vn_100_cont.launch"/>
 
@@ -30,15 +32,15 @@
     <arg name="result_draw_axis" default="true" />
     <arg name="publish_corners" default="true" />
     <arg name="publish_tf" default="true" />
-    <arg name="marker_length" default="0.025" />
-    <arg name="square_length" default="0.05" />
+    <arg name="marker_length" default="0.144" />
+    <arg name="square_length" default="0.202" />
     <arg name="x_square" default="6" />
     <arg name="y_square" default="4" />
     <arg name="num_marker" default="15" />
 
     <node ns="/" pkg="charuco_ros" type="node" name="charuco_node" output="screen">
-        <remap from="/camera_info" to="/camera/image_color" if="$(arg driver_flir)"/>
-        <remap from="/image" to="/camera/camera_info" if="$(arg driver_flir)"/>
+        <remap from="/camera_info" to="/camera/rgb/camera_info" if="$(arg driver_flir)"/>
+        <remap from="/image" to="/camera/image_raw" if="$(arg driver_flir)"/>
         <remap from="/camera_info" to="/camera/rgb/camera_info" if="$(arg driver_astra)"/>
         <remap from="/image" to="/camera/rgb/image_raw" if="$(arg driver_astra)"/>
         <remap from="/camera_info" to="/camera/rgb/camera_info" if="$(arg driver_openni2)"/>
@@ -52,8 +54,7 @@
         <param name="x_square" value="$(arg x_square)" />
         <param name="y_square" value="$(arg y_square)" />
         <param name="num_marker" value="$(arg num_marker)" />
-        <param name="dictionary_id" value="$(arg dictionary_id)" />
-    </node><arg name="result_display" default="false"/>
+    </node>
 
 
     <node if="$(arg result_display)" ns="/" pkg="image_view" type="image_view" name="charuco_image_view" output="screen">
@@ -61,14 +62,28 @@
         <param name="autosize" type="bool" value="$(arg result_autosize)" />
     </node>
 
-    <node pkg="ros_vrpn_client" name="$(arg lever_arm_name)" type="ros_vrpn_client" args="_vrpn_server_ip:=192.168.1.104" required="true" output="screen"/>
+     <node pkg="ros_vrpn_client" name="$(arg lever_arm_name)" type="ros_vrpn_client" args="_vrpn_server_ip:=192.168.1.104" required="true" output="screen"/>
 
-    <node pkg="ros_vrpn_client" name="$(arg board_name)" type="ros_vrpn_client" args="_vrpn_server_ip:=192.168.1.104" required="true" output="screen"/>
+     <node pkg="ros_vrpn_client" name="$(arg board_name)" type="ros_vrpn_client" args="_vrpn_server_ip:=192.168.1.104" required="true" output="screen"/>
 
-    <node pkg="calib_truth" type="node" name="calib_truth" output="screen">
-            <remap from="board_pose" to="$(arg board_name)/ned/pose_stamped"/>
-            <remap from="imu_pose" to="$(arg lever_arm_name)/ned/pose_stamped"/>
+     <node pkg="calib_truth" type="node" name="calib_truth" output="screen">
+             <remap from="board_pose" to="$(arg board_name)/ned/pose_stamped"/>
+             <remap from="imu_pose" to="$(arg lever_arm_name)/ned/pose_stamped"/>
+     </node>
+
+    <rosparam file="$(find camera_imu_calib)/params/estimator_param.yaml"/>
+    <node if="$(arg run_estimator)" name="camera_imu_calibration" pkg="camera_imu_calib" type="camera_imu_calib_node" output="screen">
+        <param name="enable_dynamic_update" type="bool" value="false" />
+        <param name="use_mocap_to_initialize" type="bool" value="false" />
+        <param name="mahalanobis_param" type="double" value="500" />
+        <param name="number_of_features" type="double" value="15" />
+        <param name="publish_full_quaternion" type="bool" value="true" />
+        <remap from="/imu/data" to="/imu/imu"></remap>
+        <remap from="/charuco_ros/corner" to="/charuco_node/corner"/>
+<!--         <remap from="camera/rgb/camera_info" to="/camera/camera_info" if="$(arg point_grey_camera_used)"></remap> -->
     </node>
+
+
 
     <group if="$(arg display_expected_measurements)">
         <node name="residual" pkg="camera_imu_calib" type="show_res" output="screen"/>
@@ -79,6 +94,6 @@
     </group>
 
 
-    <node if="$(arg record_bag)" name="record" pkg="rosbag" type="record" args="-O $(arg bag_name) charuco_ros/corner charuco_ros/pose camera/image_raw camera/rgb/camera_info imu/data $(arg board_name)/ned/pose_stamped $(arg lever_arm_name)/ned/pose_stamped"/>
+    <node if="$(arg record_bag)" name="record" pkg="rosbag" type="record" args="-O $(arg bag_name) charuco_node/corner charuco_node/pose camera/image_raw camera/rgb/camera_info imu/imu $(arg board_name)/ned/pose_stamped $(arg lever_arm_name)/ned/pose_stamped"/>
 
 </launch>

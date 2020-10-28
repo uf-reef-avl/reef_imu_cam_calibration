@@ -113,6 +113,9 @@ namespace calibration{
         Eigen::Quaterniond  initial_imu_q;
         Eigen::Vector3d initial_imu_position;
 
+        Eigen::Quaterniond  initial_board_q;
+        Eigen::Vector3d initial_board_position;
+
 
         bool got_camera_parameters;
 
@@ -120,6 +123,7 @@ namespace calibration{
         void sensorUpdate(charuco_ros::CharucoCornerMsg aruco_corners);
         void getCameraInfo(const sensor_msgs::CameraInfo &msg);
         void getInitialPose(camera_imu_calib::IMUCalibration msg);
+        void getBoardPose(geometry_msgs::TransformStamped msg);
 
     };
 

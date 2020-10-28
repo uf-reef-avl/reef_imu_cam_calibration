@@ -9,8 +9,8 @@ project(camera_imu_calib)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
+  reef_msgs
   nav_msgs
-reef_msgs
   roscpp
   rospy
   sensor_msgs
@@ -38,7 +38,7 @@ generate_messages(
 catkin_package(
         INCLUDE_DIRS
         LIBRARIES
-        CATKIN_DEPENDS roscpp rospy charuco_ros sensor_msgs geometry_msgs sensor_msgs tf2_eigen reef_msgs
+        CATKIN_DEPENDS roscpp rospy charuco_ros sensor_msgs reef_msgs geometry_msgs sensor_msgs tf2_eigen
 )
 
 include_directories(include ${catkin_INCLUDE_DIRS})

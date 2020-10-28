@@ -25,14 +25,14 @@ namespace calibration{
             initialized_timer(false)
 
     {
-        nh_private.param<double>("estimator_dt", dt, 0.002);
+        nh_private.param<double>("estimator_dt", dt, 0.005);
         nh_private.param<int>("number_of_features", number_of_features, 15);
         nh_private.param<bool>("publish_full_quaternion", publish_full_quaternion, true);
         nh_private.param<bool>("publish_expected_meas", publish_expected_meas_, true);
         nh_private.param<bool>("enable_partial_update", enable_partial_update_, true);
         nh_private.param<bool>("enable_dynamic_update", enable_dynamic_update, true);
         nh_private.param<double>("mahalanobis_param", mahalanobis_param, 100);
-        nh_private.param<bool>("use_mocap_to_initialize", use_mocap_to_initialize, true);
+        nh_private.param<bool>("use_mocap_to_initialize", use_mocap_to_initialize, false);
 
         F = Eigen::MatrixXd(21,21);
         F.setZero();
@@ -78,6 +78,8 @@ namespace calibration{
         reef_msgs::importMatrixFromParamServer(nh_private, Q, "Q");
         reef_msgs::importMatrixFromParamServer(nh_private, R_std, "R_std");
         reef_msgs::importMatrixFromParamServer(nh_private, betaVector, "beta");
+
+        Q = Q*0.01;
 
         double R_std_float; // Set to 1 as default.
         R_std_float = R_std(0,0);
@@ -147,6 +149,8 @@ namespace calibration{
                 rotMat.at<double>(1, 0), rotMat.at<double>(1, 1), rotMat.at<double>(1, 2),
                 rotMat.at<double>(2, 0), rotMat.at<double>(2, 1), rotMat.at<double>(2, 2);
         // ^^ This can be interpreted as the rotation matrix from the Camera to the board or the DCM of the board to the camera frame
+
+//        Eigen::Quaterniond our_orientation_quat = reef::msgs
 
         Eigen::Vector3d rpy;
         reef_msgs::roll_pitch_yaw_from_rotation321(C_rot_mat, rpy); //This is a C Matrix now!
@@ -334,7 +338,7 @@ namespace calibration{
         if(aruco_corners.pixel_corners.size() != number_of_features)
             return;
 
-        ROS_WARN_STREAM("Number of corners \t" << aruco_corners.pixel_corners.size());
+//        ROS_WARN_STREAM("Number of corners \t" << aruco_corners.pixel_corners.size());
 
         if(!initialized_pnp){
             initializePNP(aruco_corners);
@@ -352,10 +356,10 @@ namespace calibration{
             S = H * P * H.transpose() + R;
             camera_imu_calib::ExpectedMeasurement expected_msg;
             expected_msg.header = aruco_corners.header;
-            expected_msg.expected_measurement.reserve(4 * aruco_corners.metric_corners.size());
-            expected_msg.pixel_measurement.reserve(4 * aruco_corners.metric_corners.size());
+            expected_msg.expected_measurement.reserve( 2*aruco_corners.metric_corners.size());
+            expected_msg.pixel_measurement.reserve( 2*aruco_corners.metric_corners.size());
 
-            for(unsigned int i =0; i < 8 * aruco_corners.metric_corners.size(); i++){
+            for(unsigned int i =0; i < 2 * aruco_corners.metric_corners.size(); i++){
                 expected_msg.expected_measurement.push_back(expected_measurement(i));
                 expected_msg.pixel_measurement.push_back(z(i));
                 expected_msg.covariance.push_back(S(i,i));
@@ -422,7 +426,8 @@ namespace calibration{
 
     void CameraIMUEKF::nonLinearPropagation(Eigen::Vector3d omega, Eigen::Vector3d acceleration) {
 
-        Eigen::Vector3d gravity(0,getVectorMagnitude(accSampleAverage.x,accSampleAverage.y,accSampleAverage.z),0);
+        Eigen::Vector3d gravity(0,0,getVectorMagnitude(accSampleAverage.x,accSampleAverage.y,accSampleAverage.z));
+        gravity = reef_msgs::quaternion_to_rotation(initial_board_q)*gravity;
         //Based on the derivation, gravity must be interpreted as the value needed to cancel the accel's gravity out
         //expressed in the inertial frame. Since the accel reports ~-9.8 , here gravity will be ~+9.8 in the corresponding axis.
 //
@@ -516,7 +521,8 @@ namespace calibration{
             ic.block<4,1>(QX,0) = q_Ik_I.coeffs();
         }
         //Re-Construct original states
-        Eigen::Vector3d gravity(0,getVectorMagnitude(accSampleAverage.x,accSampleAverage.y,accSampleAverage.z),0);
+        Eigen::Vector3d gravity(0,0,getVectorMagnitude(accSampleAverage.x,accSampleAverage.y,accSampleAverage.z));
+        gravity = reef_msgs::quaternion_to_rotation(initial_board_q)*gravity;
         Eigen::Quaterniond q_W_to_I;
         Eigen::Vector3d world_to_imu_position(xHat(PX), xHat(PY), xHat(PZ));
         Eigen::Vector3d velocity_W(xHat(U), xHat(V), xHat(W));
@@ -540,7 +546,8 @@ namespace calibration{
         w = w_k0 + (omega - w_k0)*(t/dt) - xHat.block<3,1>(BWX,0);
         s = s_k0 + (acceleration - s_k0)*(t/dt) - xHat.block<3,1>(BAX,0);
 
-        Eigen::Vector3d gravity(0,getVectorMagnitude(accSampleAverage.x,accSampleAverage.y,accSampleAverage.z),0);
+        Eigen::Vector3d gravity(0,0,getVectorMagnitude(accSampleAverage.x,accSampleAverage.y,accSampleAverage.z));
+        gravity = reef_msgs::quaternion_to_rotation(initial_board_q)*gravity;
         Eigen::Quaterniond q_Ik_to_I;
         q_Ik_to_I.vec() << x(QX), x(QY), x(QZ);
         q_Ik_to_I.w() = x(QW);
@@ -633,10 +640,10 @@ namespace calibration{
 
     void CameraIMUEKF::publish_state() {
         if(publish_full_quaternion){
-            state_msg.world_to_imu.orientation.x = -xHat(0);
-            state_msg.world_to_imu.orientation.y = -xHat(1);
-            state_msg.world_to_imu.orientation.z = -xHat(2);
-            state_msg.world_to_imu.orientation.w = -xHat(3);
+            state_msg.world_to_imu.orientation.x = xHat(0);
+            state_msg.world_to_imu.orientation.y = xHat(1);
+            state_msg.world_to_imu.orientation.z = xHat(2);
+            state_msg.world_to_imu.orientation.w = xHat(3);
         }
         else{
             state_msg.world_to_imu.orientation.x = q_attitude_error(0);
@@ -711,6 +718,12 @@ namespace calibration{
         initial_imu_q.vec() << msg.world_to_imu.orientation.x,msg.world_to_imu.orientation.y,msg.world_to_imu.orientation.z;
         initial_imu_q.w() = msg.world_to_imu.orientation.w;
         initial_imu_position << msg.world_to_imu.position.x,msg.world_to_imu.position.y,msg.world_to_imu.position.z;
+    }
+
+    void CameraIMUEKF::getBoardPose(geometry_msgs::TransformStamped msg){
+        initial_board_q.vec() << msg.transform.rotation.x,msg.transform.rotation.y,msg.transform.rotation.z;
+        initial_board_q.w() = msg.transform.rotation.w;
+        initial_board_position << msg.transform.translation.x, msg.transform.translation.y,msg.transform.translation.z;
     }
 
     bool CameraIMUEKF::chi2AcceptPixels()

@@ -7,10 +7,11 @@ namespace calibration{
 
     SensorManager::SensorManager() : private_nh_("~"), nh_(""), num_pose(0){
 
-        corner_subscriber = nh_.subscribe("/charuco_ros/corner", 1, &SensorManager::cornerCallback, this);
+        corner_subscriber = nh_.subscribe("/charuco_node/corner", 1, &SensorManager::cornerCallback, this);
         initial_pose_subscriber = nh_.subscribe("/calib_truth", 1, &SensorManager::initialPoseCallback, this);
-        imu_subscriber_ = nh_.subscribe("imu/data", 1, &SensorManager::imuCallback, this);
+        imu_subscriber_ = nh_.subscribe("imu/imu", 1, &SensorManager::imuCallback, this);
         camera_info_subscriber = nh_.subscribe("camera/rgb/camera_info", 1, &SensorManager::cameraInfoCallback,this);
+        mocap_board_subscriber = nh_.subscribe("/tf_board/ned/pose", 1, &SensorManager::boardPoseCallback,this);
     }
 
     void SensorManager::cornerCallback(const charuco_ros::CharucoCornerMsg &msg) {
@@ -35,6 +36,12 @@ namespace calibration{
 
     void SensorManager::initialPoseCallback(const camera_imu_calib::IMUCalibrationConstPtr  &msg){
         calib_obj.getInitialPose(*msg);
+//        initial_pose_subscriber.shutdown();
+
+    }
+
+    void SensorManager::boardPoseCallback(const geometry_msgs::TransformStampedConstPtr  &msg){
+        calib_obj.getBoardPose(*msg);
 //        initial_pose_subscriber.shutdown();
 
     }

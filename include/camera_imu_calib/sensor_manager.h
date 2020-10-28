@@ -31,12 +31,13 @@ namespace calibration{
         ros::Subscriber corner_subscriber;
         ros::Subscriber initial_pose_subscriber;
         ros::Subscriber camera_info_subscriber;
+        ros::Subscriber mocap_board_subscriber;
 
         void imuCallback(const sensor_msgs::ImuConstPtr &msg);
         void cornerCallback(const charuco_ros::CharucoCornerMsg &msg);
         void initialPoseCallback(const camera_imu_calib::IMUCalibrationConstPtr  &msg);
         void cameraInfoCallback(const sensor_msgs::CameraInfo &msg);
-
+        void boardPoseCallback(const geometry_msgs::TransformStampedConstPtr  &msg);
         CameraIMUEKF calib_obj;
         int num_pose;
 
