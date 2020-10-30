@@ -30,7 +30,7 @@
 #include <camera_imu_calib/IMUCalibration.h>
 
 #define ACC_SAMPLE_SIZE 2000
-#define CORNER_SAMPLE_SIZE 100
+#define CORNER_SAMPLE_SIZE 20
 
 
 namespace calibration{
@@ -46,8 +46,10 @@ namespace calibration{
         bool got_measurement;
         bool accel_calibrated;
         bool initialized_pnp;
+        bool initialized_current_pixels;
         bool publish_full_quaternion;
         bool enable_dynamic_update;
+        double pixel_difference_threshold;
         bool use_mocap_to_initialize;
         bool FIRST_IMU_MEASUREMENT;
         double mahalanobis_param;
@@ -76,11 +78,16 @@ namespace calibration{
         Eigen::MatrixXd  integration_function(Eigen::MatrixXd x, const double t,Eigen::Vector3d w, Eigen::Vector3d s);
         void RK45integrate(Eigen::Vector3d w, Eigen::Vector3d s,double step);
         bool chi2AcceptPixels();
+        bool acceptCharucoMeasurement();
+        void nonLinearUpdateSequentially(charuco_ros::CharucoCornerMsg charuco_measurement);
 
-        void publish_state();
+
+            void publish_state();
 
         cv::Mat cameraMatrix, distortionCoeffs;
         camera_imu_calib::IMUCalibration state_msg;
+        charuco_ros::CharucoCornerMsg charuco_measurement;
+        charuco_ros::CharucoCornerMsg past_charuco_measurent;
 
         int number_of_features;
         bool publish_expected_meas_;

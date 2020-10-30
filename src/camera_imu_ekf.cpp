@@ -14,6 +14,7 @@ namespace calibration{
             got_measurement(false),
             got_camera_parameters(false),
             initialized_pnp(false),
+            initialized_current_pixels(false),
             accel_calibrated(false),
             accInitSampleCount(0),
             cornerSampleCount(false),
@@ -32,6 +33,7 @@ namespace calibration{
         nh_private.param<bool>("enable_partial_update", enable_partial_update_, true);
         nh_private.param<bool>("enable_dynamic_update", enable_dynamic_update, true);
         nh_private.param<double>("mahalanobis_param", mahalanobis_param, 100);
+        nh_private.param<double>("pixel_difference_threshold", pixel_difference_threshold, 10);
         nh_private.param<bool>("use_mocap_to_initialize", use_mocap_to_initialize, false);
 
         F = Eigen::MatrixXd(21,21);
@@ -49,16 +51,16 @@ namespace calibration{
         P = Eigen::MatrixXd(21,21);
         P.setZero();
 
-        K = Eigen::MatrixXd(21,2*number_of_features);
+        K = Eigen::MatrixXd(21,1);
         K.setZero();
 
-        z = Eigen::MatrixXd(2*number_of_features,1);
+        z = Eigen::MatrixXd(1,1);
         z.setZero();
 
-        expected_measurement = Eigen::MatrixXd(2 * number_of_features, 1);
+        expected_measurement = Eigen::MatrixXd(1, 1);
         expected_measurement.setZero();
 
-        H = Eigen::MatrixXd(2*number_of_features,21);
+        H = Eigen::MatrixXd(1,21);
 
         xHat0 = Eigen::MatrixXd(23,1);
         xHat = Eigen::MatrixXd(23,1);
@@ -66,7 +68,7 @@ namespace calibration{
 
         betaVector = Eigen::MatrixXd(21,1);
 
-        R = Eigen::MatrixXd(2 * number_of_features, 2 * number_of_features);
+        R = Eigen::MatrixXd(1, 1);
 
         I = Eigen::MatrixXd(3,3);
         I.setIdentity();
@@ -308,20 +310,18 @@ namespace calibration{
                 {
                     betaVector.block<6,1>(P_IX-1,0) << 0.6,0.6,0.6,0.6,0.6,0.6;
 //                    ROS_WARN_STREAM("Beta updated \n" << betaVector);
-
                 }
 
                 if(diff.toSec() >= 100.0 )
                 {
-                    betaVector.block<6,1>(P_IX-1,0) << 0.9,0.9,0.9,0.9,0.9,0.9;
+                    betaVector.block<6,1>(P_IX-1,0) << 1.0,1.0,1.0,1.0,1.0,1.0;
 //                    ROS_WARN_STREAM("Beta updated \n" << betaVector);
-
                 }
 
             }
             //Don't update if the measurement is an outlier
             if(chi2AcceptPixels()){
-                nonLinearUpdate();
+                nonLinearUpdateSequentially(charuco_measurement);
             }
             //Reset got measurement flag
             got_measurement = false;
@@ -335,39 +335,21 @@ namespace calibration{
         if(aruco_corners.pixel_corners.size() != number_of_features)
             return;
 
-//        ROS_WARN_STREAM("Number of corners \t" << aruco_corners.pixel_corners.size());
+        if(!initialized_current_pixels){
+            past_charuco_measurent = aruco_corners;
+            initialized_current_pixels = true;
+            return;
+        }
 
         if(!initialized_pnp){
             initializePNP(aruco_corners);
             return;
         }
-        z.setZero();
-        H.setZero();
-        expected_measurement.setZero();
-
-        for(unsigned int i =0; i < aruco_corners.metric_corners.size(); i++)
-            aruco_helper(aruco_corners.metric_corners[i].corner, aruco_corners.pixel_corners[i].corner, i);
-
-        if(publish_expected_meas_){
-            Eigen::MatrixXd S;
-            S = H * P * H.transpose() + R;
-            camera_imu_calib::ExpectedMeasurement expected_msg;
-            expected_msg.header = aruco_corners.header;
-            expected_msg.expected_measurement.reserve( 2*aruco_corners.metric_corners.size());
-            expected_msg.pixel_measurement.reserve( 2*aruco_corners.metric_corners.size());
-
-            for(unsigned int i =0; i < 2 * aruco_corners.metric_corners.size(); i++){
-                expected_msg.expected_measurement.push_back(expected_measurement(i));
-                expected_msg.pixel_measurement.push_back(z(i));
-                expected_msg.covariance.push_back(S(i,i));
-//                for(unsigned int j =0; j < 8 * aruco_corners.metric_corners.size(); j++){
-//                    expected_msg.covariance.push_back(S(i,j));
-//                }
-            }
-            expect_pixel_publisher_.publish(expected_msg);
-
+        charuco_measurement = aruco_corners;
+        if(acceptCharucoMeasurement()) {
+            got_measurement = true;
         }
-        got_measurement = true;
+
     }
 
     void CameraIMUEKF::aruco_helper(charuco_ros::SingleCorner metric_corner, charuco_ros::SingleCorner pixel_corner,
@@ -410,15 +392,26 @@ namespace calibration{
         feature_pixel_position_camera_frame << fx * (h_hat(0)/h_hat(2)) + cx,
                                                 fy * (h_hat(1)/h_hat(2)) + cy;
 
- expected_measurement.block<2,1>(2*index, 0) = feature_pixel_position_camera_frame;
-        z.block<2,1>(2*index, 0) << pixel_corner.x , pixel_corner.y;
+
         q_block = q_I_to_C.toRotationMatrix().transpose() * reef_msgs::skew( q_W_to_I.toRotationMatrix().transpose() * (measured_metric - p_I_in_W) );
         alpha_block =  reef_msgs::skew(q_I_to_C.toRotationMatrix().transpose() *q_W_to_I.toRotationMatrix().transpose()*measured_metric) -1* reef_msgs::skew ( q_I_to_C.toRotationMatrix().transpose()*q_W_to_I.toRotationMatrix().transpose() * p_I_in_W) -1*reef_msgs::skew(q_I_to_C.toRotationMatrix().transpose()*position_camera_in_imu_frame) ;
         partial_y_measure_p_fc << fx, 0,    -fx * h_hat(0)/h_hat(2),
                                   0,  fy,   -fy * h_hat(1)/h_hat(2);
         partial_y_measure_p_fc = (1./h_hat(2)) * partial_y_measure_p_fc;
         partial_x_measure << q_block, pos_block, zero_block, zero_block, zero_block, p_c_i_block, alpha_block;
-        H.block<2,21>(2*index,0)  = partial_y_measure_p_fc * partial_x_measure;
+        Eigen::MatrixXd tempH(2,21);
+        tempH = partial_y_measure_p_fc * partial_x_measure;
+        if ( index == 0 )
+        {
+            expected_measurement.block<1,1>(0, 0) << feature_pixel_position_camera_frame(index);
+            z.block<1,1>(0, 0) << pixel_corner.x;
+            H.block<1,21>(0,0)  = tempH.block<1,21>(index,0);
+        }
+        else if(index == 1){
+            expected_measurement.block<1,1>(0, 0) << feature_pixel_position_camera_frame(index);
+            z.block<1,1>(0, 0) << pixel_corner.y;
+            H.block<1,21>(0,0)  = tempH.block<1,21>(index,0);
+        }
     }
 
     void CameraIMUEKF::nonLinearPropagation(Eigen::Vector3d omega, Eigen::Vector3d acceleration) {
@@ -574,8 +567,6 @@ namespace calibration{
         return dxdt;
     }
 
-
-
     void CameraIMUEKF::nonLinearUpdate() {
 
         // Break state into variables to make it easier to read (and write) code
@@ -633,6 +624,16 @@ namespace calibration{
         } else
             P = ( Eigen::MatrixXd::Identity(21,21) - K * H ) * P;
 
+    }
+
+    void CameraIMUEKF::nonLinearUpdateSequentially(charuco_ros::CharucoCornerMsg charuco_measure) {
+
+        for (unsigned int i = 0; i < charuco_measure.metric_corners.size(); i++) {
+            aruco_helper(charuco_measure.metric_corners[i].corner, charuco_measure.pixel_corners[i].corner, 0);
+            nonLinearUpdate();
+            aruco_helper(charuco_measure.metric_corners[i].corner, charuco_measure.pixel_corners[i].corner, 1);
+            nonLinearUpdate();
+        }
     }
 
     void CameraIMUEKF::publish_state() {
@@ -722,6 +723,25 @@ namespace calibration{
         initial_board_q.w() = msg.pose.orientation.w;
         initial_board_position << msg.pose.position.x, msg.pose.position.y, msg.pose.position.z;
     }
+
+    bool CameraIMUEKF::acceptCharucoMeasurement(){
+        Eigen::MatrixXd differential_pixel_vector(15,1);
+        for (int i = 0; i < charuco_measurement.pixel_corners.size() ; ++i) {
+            differential_pixel_vector(i,0) = sqrt(pow((charuco_measurement.pixel_corners[i].corner.x - past_charuco_measurent.pixel_corners[i].corner.x),2) + pow((charuco_measurement.pixel_corners[i].corner.y - past_charuco_measurent.pixel_corners[i].corner.y),2));
+        }
+        past_charuco_measurent = charuco_measurement;
+//        ROS_INFO("Vector pixel %f",differential_pixel_vector.maxCoeff());
+        if (differential_pixel_vector.maxCoeff() < pixel_difference_threshold ){
+
+            return true;
+        }
+        else{
+            ROS_INFO("Vector Pixel rejection with %f",differential_pixel_vector.maxCoeff());
+            return false;}
+
+
+    }
+
 
     bool CameraIMUEKF::chi2AcceptPixels()
     {
