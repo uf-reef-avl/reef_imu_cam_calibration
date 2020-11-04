@@ -8,6 +8,7 @@ namespace calibration{
     SensorManager::SensorManager() : private_nh_("~"), nh_(""), num_pose(0){
 
         corner_subscriber = nh_.subscribe("/charuco_node/corner", 1, &SensorManager::cornerCallback, this);
+        pose_charuco_subscriber = nh_.subscribe("/charuco_node/pose", 1, &SensorManager::charucoPoseCallback, this);
         initial_pose_subscriber = nh_.subscribe("/calib_truth", 1, &SensorManager::initialPoseCallback, this);
         imu_subscriber_ = nh_.subscribe("imu/imu", 1, &SensorManager::imuCallback, this);
         camera_info_subscriber = nh_.subscribe("camera/rgb/camera_info", 1, &SensorManager::cameraInfoCallback,this);
@@ -17,6 +18,11 @@ namespace calibration{
     void SensorManager::cornerCallback(const charuco_ros::CharucoCornerMsg &msg) {
         if(calib_obj.got_camera_parameters)
             calib_obj.sensorUpdate(msg);
+    }
+
+    void SensorManager::charucoPoseCallback(const geometry_msgs::PoseStampedConstPtr &msg) {
+        if(calib_obj.got_camera_parameters)
+            calib_obj.getCharucoPose(*msg);
     }
 
     void SensorManager::imuCallback(const sensor_msgs::ImuConstPtr &msg) {

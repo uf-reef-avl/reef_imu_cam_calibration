@@ -29,7 +29,7 @@
 
 #include <camera_imu_calib/IMUCalibration.h>
 
-#define ACC_SAMPLE_SIZE 2000
+#define ACC_SAMPLE_SIZE 100
 #define CORNER_SAMPLE_SIZE 20
 
 
@@ -74,15 +74,14 @@ namespace calibration{
         void aruco_helper(charuco_ros::SingleCorner metric_corner, charuco_ros::SingleCorner pixel_corner, unsigned int index);
         void initializeAcc(geometry_msgs::Vector3 acc, geometry_msgs::Vector3 gyro);
         void initializePNP(charuco_ros::CharucoCornerMsg charuco_corners);
+        Eigen::Vector3d computePNP(charuco_ros::CharucoCornerMsg charuco_corners);
         void getCamParams(const sensor_msgs::CameraInfo& cam_info);
         Eigen::MatrixXd  integration_function(Eigen::MatrixXd x, const double t,Eigen::Vector3d w, Eigen::Vector3d s);
         void RK45integrate(Eigen::Vector3d w, Eigen::Vector3d s,double step);
         bool chi2AcceptPixels();
         bool acceptCharucoMeasurement();
         void nonLinearUpdateSequentially(charuco_ros::CharucoCornerMsg charuco_measurement);
-
-
-            void publish_state();
+        void publish_state();
 
         cv::Mat cameraMatrix, distortionCoeffs;
         camera_imu_calib::IMUCalibration state_msg;
@@ -121,7 +120,10 @@ namespace calibration{
         Eigen::Vector3d initial_imu_position;
 
         Eigen::Quaterniond  initial_board_q;
+        Eigen::Quaterniond  charuco_pose;
         Eigen::Vector3d initial_board_position;
+        double charuco_roll;
+        double previous_charuco_roll;
 
 
         bool got_camera_parameters;
@@ -131,6 +133,7 @@ namespace calibration{
         void getCameraInfo(const sensor_msgs::CameraInfo &msg);
         void getInitialPose(camera_imu_calib::IMUCalibration msg);
         void getBoardPose(geometry_msgs::PoseStamped msg);
+        void getCharucoPose(geometry_msgs::PoseStamped msg);
 
     };
 

@@ -20,6 +20,7 @@ namespace calibration{
             cornerSampleCount(false),
             fx(0),fy(0),cx(0),cy(0),
             number_of_features(0),
+            previous_charuco_roll(180),
             publish_full_quaternion(false),
             publish_expected_meas_(false),
             enable_partial_update_(true),
@@ -199,9 +200,67 @@ namespace calibration{
             xHat.block<3,1>(QX,0) = world_to_imu_quat.vec();
             xHat(QW,0) = world_to_imu_quat.w();
             xHat.block<3,1>(PX,0) = world_to_imu_pose;
-            ROS_WARN_STREAM("XHat post initialization is  \n" <<xHat);
+            ROS_WARN_STREAM("PnP XHat post initialization is  \n" <<xHat);
         }
     }
+
+    Eigen::Vector3d CameraIMUEKF::computePNP(charuco_ros::CharucoCornerMsg aruco_corners) {
+        Eigen::Vector3d rpy;
+        int num_of_markers = aruco_corners.pixel_corners.size();
+
+        std::vector<cv::Point3f> objPnts;
+        objPnts.reserve(num_of_markers);
+        std::vector<cv::Point2f> imgPnts;
+        imgPnts.reserve(num_of_markers);
+
+        for (int i = 0; i < num_of_markers; i++) {
+            objPnts.push_back(
+                    cv::Point3f(aruco_corners.metric_corners[i].corner.x, aruco_corners.metric_corners[i].corner.y,
+                                aruco_corners.metric_corners[i].corner.z));
+            imgPnts.push_back(
+                    cv::Point2f(aruco_corners.pixel_corners[i].corner.x, aruco_corners.pixel_corners[i].corner.y));
+        }
+
+        cv::Mat objPoints, imgPoints;
+        cv::Mat(objPnts).copyTo(objPoints);
+        cv::Mat(imgPnts).copyTo(imgPoints);
+
+        if (objPoints.total() == 0){
+             rpy<<0,0,0;
+            return rpy;
+        }
+
+
+        cv::Vec3d tvec(0, 0, 1);
+        cv::Vec3d rvec(0, 0, 0);
+        cv::Mat guessRotMat = (cv::Mat_<double>(3, 3) << 1, 0, 0, 0, 1, 0, 0, 0, 1);
+        cv::Rodrigues(guessRotMat, rvec);
+
+        cv::solvePnP(objPoints, imgPoints, cameraMatrix, distortionCoeffs, rvec, tvec, true);
+
+        cv::Mat rotMat;
+        cv::Rodrigues(rvec, rotMat);
+
+        if (tvec[2] < 0) {
+            std::cout << "cv::solvePnP converged to invalid transform translation z = " << tvec[2] <<
+                      " when, in reality we must assert, z > 0." << std::endl;
+            rpy<<0,0,0;
+            return rpy;
+        }
+
+        Eigen::Matrix3d C_rot_mat;
+        C_rot_mat << rotMat.at<double>(0, 0), rotMat.at<double>(0, 1), rotMat.at<double>(0, 2),
+                rotMat.at<double>(1, 0), rotMat.at<double>(1, 1), rotMat.at<double>(1, 2),
+                rotMat.at<double>(2, 0), rotMat.at<double>(2, 1), rotMat.at<double>(2, 2);
+        // ^^ This can be interpreted as the rotation matrix from the Camera to the board or the DCM of the board to the camera frame
+
+//        Eigen::Quaterniond our_orientation_quat = reef::msgs
+
+
+        reef_msgs::roll_pitch_yaw_from_rotation321(C_rot_mat, rpy);
+        return rpy;
+    }
+
 
     void CameraIMUEKF::getCameraInfo(const sensor_msgs::CameraInfo &msg){
 
@@ -301,18 +360,18 @@ namespace calibration{
                 //Compute time elapsed
                 ros::Time currtime=ros::Time::now();
                 ros::Duration diff=currtime-initial_time;
-                if(diff.toSec() >= 60.0 && diff.toSec() < 80.0)
+                if(diff.toSec() >= 80.0 && diff.toSec() < 100.0)
                 {
                     betaVector.block<6,1>(P_IX-1,0) << 0.3,0.3,0.3,0.3,0.3,0.3;
 //                    ROS_WARN_STREAM("Beta updated \n" << betaVector);
                 }
-                if(diff.toSec() >= 80.0 && diff.toSec() < 100.0)
+                if(diff.toSec() >= 100.0 && diff.toSec() < 130.0)
                 {
                     betaVector.block<6,1>(P_IX-1,0) << 0.6,0.6,0.6,0.6,0.6,0.6;
 //                    ROS_WARN_STREAM("Beta updated \n" << betaVector);
                 }
 
-                if(diff.toSec() >= 100.0 )
+                if(diff.toSec() >= 130.0 )
                 {
                     betaVector.block<6,1>(P_IX-1,0) << 1.0,1.0,1.0,1.0,1.0,1.0;
 //                    ROS_WARN_STREAM("Beta updated \n" << betaVector);
@@ -332,16 +391,17 @@ namespace calibration{
 
     void CameraIMUEKF::sensorUpdate(charuco_ros::CharucoCornerMsg aruco_corners) {
 
-        if(aruco_corners.pixel_corners.size() != number_of_features)
-            return;
-
         if(!initialized_current_pixels){
+            if(aruco_corners.pixel_corners.size() != number_of_features){
+                return;}
             past_charuco_measurent = aruco_corners;
             initialized_current_pixels = true;
             return;
         }
 
         if(!initialized_pnp){
+            if(aruco_corners.pixel_corners.size() != number_of_features){
+                return;}
             initializePNP(aruco_corners);
             return;
         }
@@ -482,7 +542,7 @@ namespace calibration{
         }
 
 
-        int steps = 2;
+        int steps = 1;
         RK45integrate(omega,acceleration,steps);
 
 
@@ -602,13 +662,12 @@ namespace calibration{
         quat_error.w() = 1;
         world_to_imu_quat = reef_msgs::quatMult(quat_error , world_to_imu_quat) ;
         world_to_imu_quat.normalize();
-        xHat.block<4,1>(0,0) =  world_to_imu_quat.coeffs();
+        xHat.block<4,1>(QX,0) =  world_to_imu_quat.coeffs();
 
         //Here we also save the quaterinion error. Now for the offset orientation.
         q_offset_error = correction.block<3,1>(18,0);
         quat_error.vec() = 0.5 * correction.block<3,1>(18,0);
         quat_error.w() = 1;
-//        imu_to_camera_quat = imu_to_camera_quat * quat_error;
         imu_to_camera_quat =  reef_msgs::quatMult(quat_error , imu_to_camera_quat );
         imu_to_camera_quat.normalize();
         xHat.block<4,1>(Q_IX,0) =  imu_to_camera_quat.coeffs();
@@ -724,20 +783,44 @@ namespace calibration{
         initial_board_position << msg.pose.position.x, msg.pose.position.y, msg.pose.position.z;
     }
 
-    bool CameraIMUEKF::acceptCharucoMeasurement(){
-        Eigen::MatrixXd differential_pixel_vector(15,1);
-        for (int i = 0; i < charuco_measurement.pixel_corners.size() ; ++i) {
-            differential_pixel_vector(i,0) = sqrt(pow((charuco_measurement.pixel_corners[i].corner.x - past_charuco_measurent.pixel_corners[i].corner.x),2) + pow((charuco_measurement.pixel_corners[i].corner.y - past_charuco_measurent.pixel_corners[i].corner.y),2));
-        }
-        past_charuco_measurent = charuco_measurement;
-//        ROS_INFO("Vector pixel %f",differential_pixel_vector.maxCoeff());
-        if (differential_pixel_vector.maxCoeff() < pixel_difference_threshold ){
 
-            return true;
+    void CameraIMUEKF::getCharucoPose(geometry_msgs::PoseStamped msg){
+        charuco_pose.vec() << msg.pose.orientation.x,msg.pose.orientation.y,msg.pose.orientation.z;
+        charuco_pose.w() = msg.pose.orientation.w;
+        Eigen::Vector3d rpy;
+        reef_msgs::roll_pitch_yaw_from_rotation321(charuco_pose.toRotationMatrix().transpose(), rpy);
+        charuco_roll = 57.3*rpy(0);
+    }
+
+    bool CameraIMUEKF::acceptCharucoMeasurement(){
+//        Eigen::MatrixXd differential_pixel_vector(15,1);
+//        for (int i = 0; i < charuco_measurement.pixel_corners.size() ; ++i) {
+//            differential_pixel_vector(i,0) = sqrt(pow((charuco_measurement.pixel_corners[i].corner.x - past_charuco_measurent.pixel_corners[i].corner.x),2) + pow((charuco_measurement.pixel_corners[i].corner.y - past_charuco_measurent.pixel_corners[i].corner.y),2));
+//        }
+////        ROS_INFO("Vector pixel %f",differential_pixel_vector.maxCoeff());
+//        past_charuco_measurent = charuco_measurement; //This will reject the current outlier and the next measurement.
+//        double roll_difference;
+//        roll_difference = charuco_roll - previous_charuco_roll;
+//        previous_charuco_roll = charuco_roll;
+//        if (differential_pixel_vector.maxCoeff() > pixel_difference_threshold || abs(roll_difference)>=30 ){
+//            ROS_INFO("Vector Pixel rejection with %f",differential_pixel_vector.maxCoeff());
+//            ROS_INFO("Charuco Attitude jump %f",abs(roll_difference));
+//            return false;
+//        }
+//        else{
+//            return true;}
+        Eigen::Vector3d rpy;
+        rpy = 57.3*computePNP(charuco_measurement);
+        double roll_difference;
+        roll_difference = rpy(0) - previous_charuco_roll;
+        previous_charuco_roll =  rpy(0);
+        if (abs(roll_difference)>=pixel_difference_threshold ){
+            ROS_INFO("Charuco Attitude jump %f      ",abs(roll_difference));
+            return false;
         }
         else{
-            ROS_INFO("Vector Pixel rejection with %f",differential_pixel_vector.maxCoeff());
-            return false;}
+            return true;}
+
 
 
     }
