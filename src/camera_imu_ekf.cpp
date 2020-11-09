@@ -20,7 +20,6 @@ namespace calibration{
             cornerSampleCount(false),
             fx(0),fy(0),cx(0),cy(0),
             number_of_features(0),
-            previous_charuco_roll(180),
             publish_full_quaternion(false),
             publish_expected_meas_(false),
             enable_partial_update_(true),
@@ -104,6 +103,7 @@ namespace calibration{
 
         pnp_average_translation.setZero();
         pnp_average_euler.setZero();
+        previous_charuco_roll = Eigen::Vector3d(0,0,0);
         FIRST_IMU_MEASUREMENT = true;
     }
 
@@ -202,6 +202,7 @@ namespace calibration{
             xHat.block<3,1>(PX,0) = world_to_imu_pose;
             ROS_WARN_STREAM("PnP XHat post initialization is  \n" <<xHat);
         }
+
     }
 
     Eigen::Vector3d CameraIMUEKF::computePNP(charuco_ros::CharucoCornerMsg aruco_corners) {
@@ -312,8 +313,11 @@ namespace calibration{
             xHat(BWX, 0) = gyroSampleAverage.x;
             xHat(BWY, 0) = gyroSampleAverage.y;
             xHat(BWZ, 0) = gyroSampleAverage.z;
+
+            gravity<<0,0,9.80665;
+
             ROS_WARN_STREAM("XHat post IMU initialization is  \n" <<xHat);
-            ROS_WARN_STREAM("Gravity is  \n" <<getVectorMagnitude(accSampleAverage.x,accSampleAverage.y,accSampleAverage.z));
+            ROS_WARN_STREAM("Gravity is  \n" <<gravity);
             ROS_WARN_STREAM("Accel components are  \n" <<accSampleAverage);
         }
 
@@ -360,20 +364,21 @@ namespace calibration{
                 //Compute time elapsed
                 ros::Time currtime=ros::Time::now();
                 ros::Duration diff=currtime-initial_time;
+
                 if(diff.toSec() >= 80.0 && diff.toSec() < 100.0)
                 {
-                    betaVector.block<6,1>(P_IX-1,0) << 0.3,0.3,0.3,0.3,0.3,0.3;
+                    betaVector.block<6,1>(P_IX-1,0) << 0.01,0.01,0.01,0.3,0.3,0.3;
 //                    ROS_WARN_STREAM("Beta updated \n" << betaVector);
                 }
                 if(diff.toSec() >= 100.0 && diff.toSec() < 130.0)
                 {
-                    betaVector.block<6,1>(P_IX-1,0) << 0.6,0.6,0.6,0.6,0.6,0.6;
+                    betaVector.block<6,1>(P_IX-1,0) << 0.05,0.05,0.05,0.6,0.6,0.6;
 //                    ROS_WARN_STREAM("Beta updated \n" << betaVector);
                 }
 
                 if(diff.toSec() >= 130.0 )
                 {
-                    betaVector.block<6,1>(P_IX-1,0) << 1.0,1.0,1.0,1.0,1.0,1.0;
+                    betaVector.block<6,1>(P_IX-1,0) << 0.1,0.1,0.1,1.0,1.0,1.0;
 //                    ROS_WARN_STREAM("Beta updated \n" << betaVector);
                 }
 
@@ -476,8 +481,7 @@ namespace calibration{
 
     void CameraIMUEKF::nonLinearPropagation(Eigen::Vector3d omega, Eigen::Vector3d acceleration) {
 
-        Eigen::Vector3d gravity(0,0,9.81);
-        gravity = reef_msgs::quaternion_to_rotation(initial_board_q)*gravity;
+        gravity_in_board = reef_msgs::quaternion_to_rotation(initial_board_q)*gravity;
         //Based on the derivation, gravity must be interpreted as the value needed to cancel the accel's gravity out
         //expressed in the inertial frame. Since the accel reports ~-9.8 , here gravity will be ~+9.8 in the corresponding axis.
 //
@@ -542,7 +546,7 @@ namespace calibration{
         }
 
 
-        int steps = 1;
+        int steps = 20;
         RK45integrate(omega,acceleration,steps);
 
 
@@ -571,8 +575,7 @@ namespace calibration{
             ic.block<4,1>(QX,0) = q_Ik_I.coeffs();
         }
         //Re-Construct original states
-        Eigen::Vector3d gravity(0,0,9.81);
-        gravity = reef_msgs::quaternion_to_rotation(initial_board_q)*gravity;
+        gravity_in_board = reef_msgs::quaternion_to_rotation(initial_board_q)*gravity;
         Eigen::Quaterniond q_W_to_I;
         Eigen::Vector3d world_to_imu_position(xHat(PX), xHat(PY), xHat(PZ));
         Eigen::Vector3d velocity_W(xHat(U), xHat(V), xHat(W));
@@ -583,9 +586,9 @@ namespace calibration{
         q_W_to_I = xHat.block<4,1>(QX,0);
         xHat.block<4,1>(QX,0) = reef_msgs::quatMult(q_Ik_I,q_W_to_I).coeffs(); //This recovers the full current attitude after propagation.
         //Position
-        xHat.block<3,1>(PX,0) = world_to_imu_position + velocity_W*dt + 0.5*gravity*dt*dt + q_W_to_I.toRotationMatrix()*ic.block<3,1>(PX,0);
+        xHat.block<3,1>(PX,0) = world_to_imu_position + velocity_W*dt + 0.5*gravity_in_board*dt*dt + q_W_to_I.toRotationMatrix()*ic.block<3,1>(PX,0);
         //Velocity
-        xHat.block<3,1>(U,0) = velocity_W + gravity*dt + q_W_to_I.toRotationMatrix()*ic.block<3,1>(U,0);
+        xHat.block<3,1>(U,0) = velocity_W + gravity_in_board*dt + q_W_to_I.toRotationMatrix()*ic.block<3,1>(U,0);
     }
 
     Eigen::MatrixXd CameraIMUEKF::integration_function( Eigen::MatrixXd x, const double t, Eigen::Vector3d omega,Eigen::Vector3d acceleration)
@@ -596,8 +599,7 @@ namespace calibration{
         w = w_k0 + (omega - w_k0)*(t/dt) - xHat.block<3,1>(BWX,0);
         s = s_k0 + (acceleration - s_k0)*(t/dt) - xHat.block<3,1>(BAX,0);
 
-        Eigen::Vector3d gravity(0,0,9.81);
-        gravity = reef_msgs::quaternion_to_rotation(initial_board_q)*gravity;
+        gravity_in_board = reef_msgs::quaternion_to_rotation(initial_board_q)*gravity;
         Eigen::Quaterniond q_Ik_to_I;
         q_Ik_to_I.vec() << x(QX), x(QY), x(QZ);
         q_Ik_to_I.w() = x(QW);
@@ -646,7 +648,9 @@ namespace calibration{
 
         K = P * H.transpose() * (H * P * H.transpose() + R).inverse();
         Eigen::MatrixXd correction(21,1);
-
+        alphaVector = Eigen::MatrixXd::Ones(21, 1) - betaVector;
+        gammas.setZero();
+        gammas.diagonal() = alphaVector;
 
         if(enable_partial_update_){
             correction = (Eigen::MatrixXd::Identity(21, 21) - gammas) * K * (z - expected_measurement);
@@ -739,6 +743,9 @@ namespace calibration{
             state_msg.imu_to_camera.orientation.x = q_offset_error(0);
             state_msg.imu_to_camera.orientation.y = q_offset_error(1);
             state_msg.imu_to_camera.orientation.z = q_offset_error(2);
+//            state_msg.imu_to_camera.orientation.x = rpy_measurement(0);
+//            state_msg.imu_to_camera.orientation.y = rpy_measurement(1);
+//            state_msg.imu_to_camera.orientation.z = rpy_measurement(2);
             state_msg.imu_to_camera.orientation.w = 1.0;
         }
 
@@ -809,20 +816,17 @@ namespace calibration{
 //        }
 //        else{
 //            return true;}
-        Eigen::Vector3d rpy;
-        rpy = 57.3*computePNP(charuco_measurement);
-        double roll_difference;
-        roll_difference = rpy(0) - previous_charuco_roll;
-        previous_charuco_roll =  rpy(0);
-        if (abs(roll_difference)>=pixel_difference_threshold ){
-            ROS_INFO("Charuco Attitude jump %f      ",abs(roll_difference));
+        rpy_measurement = 57.3*computePNP(charuco_measurement);
+        Eigen::Vector3d angle_difference;
+        angle_difference = rpy_measurement - previous_charuco_roll;
+        previous_charuco_roll =  rpy_measurement;
+        if (abs(angle_difference(0))>=pixel_difference_threshold || angle_difference(1)>pixel_difference_threshold || angle_difference(2)>pixel_difference_threshold || rpy_measurement.norm()==0){
+            ROS_INFO("Charuco Attitude jump     ");
+            std::cout<<angle_difference;
             return false;
         }
         else{
             return true;}
-
-
-
     }
 
 

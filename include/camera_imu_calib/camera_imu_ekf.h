@@ -62,10 +62,13 @@ namespace calibration{
         geometry_msgs::Vector3 accSampleAverage;
         geometry_msgs::Vector3 gyroSampleAverage;
 
-        Eigen::MatrixXd expected_measurement;
+        Eigen::Vector3d gravity;
+        Eigen::Vector3d gravity_in_board;
 
+        Eigen::MatrixXd expected_measurement;
         Eigen::Vector3d pnp_average_translation;
         Eigen::Vector3d pnp_average_euler;
+        Eigen::Vector3d rpy_measurement;
         Eigen::Vector3d w_k0;
         Eigen::Vector3d s_k0;
 
@@ -123,7 +126,7 @@ namespace calibration{
         Eigen::Quaterniond  charuco_pose;
         Eigen::Vector3d initial_board_position;
         double charuco_roll;
-        double previous_charuco_roll;
+        Eigen::Vector3d previous_charuco_roll;
 
 
         bool got_camera_parameters;
