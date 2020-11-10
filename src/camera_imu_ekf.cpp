@@ -372,13 +372,13 @@ namespace calibration{
                 }
                 if(diff.toSec() >= 100.0 && diff.toSec() < 130.0)
                 {
-                    betaVector.block<6,1>(P_IX-1,0) << 0.05,0.05,0.05,0.6,0.6,0.6;
+                    betaVector.block<6,1>(P_IX-1,0) << 0.025,0.025,0.025,0.6,0.6,0.6;
 //                    ROS_WARN_STREAM("Beta updated \n" << betaVector);
                 }
 
                 if(diff.toSec() >= 130.0 )
                 {
-                    betaVector.block<6,1>(P_IX-1,0) << 0.1,0.1,0.1,1.0,1.0,1.0;
+                    betaVector.block<6,1>(P_IX-1,0) << 0.05,0.05,0.05,1.0,1.0,1.0;
 //                    ROS_WARN_STREAM("Beta updated \n" << betaVector);
                 }
 
