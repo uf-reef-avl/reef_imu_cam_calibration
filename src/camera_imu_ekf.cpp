@@ -452,9 +452,9 @@ namespace calibration{
         Eigen::Vector3d measured_metric(metric_corner.x, metric_corner.y, metric_corner.z);
         Eigen::Vector3d h_hat;
         h_hat = q_I_to_C.toRotationMatrix().transpose() * ( q_W_to_I.toRotationMatrix().transpose() * (measured_metric -  p_I_in_W) - position_camera_in_imu_frame);
-        Eigen::Vector2d feature_pixel_position_camera_frame;
+        Eigen::Vector2d expected_feature_pixel_position_camera_frame;
 //Camera parameters in Jacobian
-        feature_pixel_position_camera_frame << fx * (h_hat(0)/h_hat(2)) + cx,
+        expected_feature_pixel_position_camera_frame << fx * (h_hat(0)/h_hat(2)) + cx,
                                                 fy * (h_hat(1)/h_hat(2)) + cy;
 
 
@@ -468,12 +468,12 @@ namespace calibration{
         tempH = partial_y_measure_p_fc * partial_x_measure;
         if ( index == 0 )
         {
-            expected_measurement.block<1,1>(0, 0) << feature_pixel_position_camera_frame(index);
+            expected_measurement.block<1,1>(0, 0) << expected_feature_pixel_position_camera_frame(index);
             z.block<1,1>(0, 0) << pixel_corner.x;
             H.block<1,21>(0,0)  = tempH.block<1,21>(index,0);
         }
         else if(index == 1){
-            expected_measurement.block<1,1>(0, 0) << feature_pixel_position_camera_frame(index);
+            expected_measurement.block<1,1>(0, 0) << expected_feature_pixel_position_camera_frame(index);
             z.block<1,1>(0, 0) << pixel_corner.y;
             H.block<1,21>(0,0)  = tempH.block<1,21>(index,0);
         }
@@ -548,8 +548,7 @@ namespace calibration{
 
         int steps = 20;
         RK45integrate(omega,acceleration,steps);
-
-
+        //Change this propagation. Do UDU now.
         P = P + (F * P + P * F.transpose() + G * Q * G.transpose()) * dt;
         w_k0 = omega;
         s_k0 = acceleration;
@@ -680,6 +679,7 @@ namespace calibration{
 
         if(enable_partial_update_)
         {
+            //Change this update. Do UDU^T.
             Eigen::MatrixXd P_prior;
             P_prior = P; //store the prior for partial update
             P = ( Eigen::MatrixXd::Identity(21,21) - K * H ) * P;
@@ -692,10 +692,14 @@ namespace calibration{
     void CameraIMUEKF::nonLinearUpdateSequentially(charuco_ros::CharucoCornerMsg charuco_measure) {
 
         for (unsigned int i = 0; i < charuco_measure.metric_corners.size(); i++) {
+            //Update with x
             aruco_helper(charuco_measure.metric_corners[i].corner, charuco_measure.pixel_corners[i].corner, 0);
             nonLinearUpdate();
+
+            //Update with y
             aruco_helper(charuco_measure.metric_corners[i].corner, charuco_measure.pixel_corners[i].corner, 1);
             nonLinearUpdate();
+
         }
     }
 
