@@ -1,23 +1,23 @@
 <launch>
 
-    <arg name="record_bag" default="true"/>
+    <arg name="record_bag" default="false"/>
     <arg name="bag_name" default="cam_imu_for_plots_FULL_Nov112020"/>
     <arg name="play_bag" value="true"/>
     <arg name="run_estimator" value="true"/>
     <arg name="run_truth" value="true"/>
-    <arg name="display_expected_measurements" default="false"/>
+    <arg name="display_expected_measurements" default="true"/>
     <arg name="run_aruco_corners" default="false"/>
     <arg name="point_grey_camera_used" default="false"/>
     <arg name="lever_arm_name" default="tf_imu"/>
     <arg name="board_name" default="tf_board"/>
 
     <group if="$(arg play_bag)">
-<!--    <arg name="bag_path" default="/home/moa-nalo/bags_imu_camera_calibration/cam_imu_102620_001_bag_filtered.bag"/>-->
     <arg name="bag_path" default="/home/humberto/cam_imu_bags_10052020/cam_imu_100520_07.bag"/>
+<!--    <arg name="bag_path" default="/home/humberto/cam_imu_bags_10052020/cam_imu_100520_09.bag"/>-->
     <node pkg="rosbag" type="play" name="player" output="screen" args="--clock --pause -s 7  $(arg bag_path)"/>
     </group>
 
-    <arg name="result_display" default="false"/>
+    <arg name="result_display" default="true"/>
     <arg name="result_autosize" default="true"/>
     <arg name="result_draw_markers" default="true" />
     <arg name="result_draw_axis" default="true" />
@@ -63,6 +63,7 @@
         <param name="mahalanobis_param" type="double" value="50000" />
         <param name="number_of_features" type="double" value="15" />
         <param name="publish_full_quaternion" type="bool" value="true" />
+        <param name="publish_expected_meas" type="bool" value="true" />
         <remap from="/imu/data" to="/imu/imu"></remap>
         <remap from="/charuco_ros/corner" to="/charuco_node/corner"/>
     </node>

@@ -690,18 +690,45 @@ namespace calibration{
     }
 
     void CameraIMUEKF::nonLinearUpdateSequentially(charuco_ros::CharucoCornerMsg charuco_measure) {
+        Eigen::MatrixXd S;
+        camera_imu_calib::ExpectedMeasurement expected_msg;
+        if(publish_expected_meas_&& charuco_measure.metric_corners.size() == 15) {
+
+            expected_msg.header = charuco_measure.header;
+            expected_msg.expected_measurement.reserve(2 * charuco_measure.metric_corners.size());
+            expected_msg.pixel_measurement.reserve(2 * charuco_measure.metric_corners.size());
+        }
 
         for (unsigned int i = 0; i < charuco_measure.metric_corners.size(); i++) {
             //Update with x
             aruco_helper(charuco_measure.metric_corners[i].corner, charuco_measure.pixel_corners[i].corner, 0);
             nonLinearUpdate();
+            if(publish_expected_meas_&& charuco_measure.metric_corners.size() == 15) {
+                S = H * P * H.transpose() + R;
+                expected_msg.expected_measurement.push_back(expected_measurement(0));
+                expected_msg.pixel_measurement.push_back(z(0));
+                expected_msg.covariance.push_back(S(0,0));
+            }
 
             //Update with y
             aruco_helper(charuco_measure.metric_corners[i].corner, charuco_measure.pixel_corners[i].corner, 1);
             nonLinearUpdate();
+            if(publish_expected_meas_&& charuco_measure.metric_corners.size() == 15) {
+                S = H * P * H.transpose() + R;
+                expected_msg.expected_measurement.push_back(expected_measurement(0));
+                expected_msg.pixel_measurement.push_back(z(0));
+                expected_msg.covariance.push_back(S(0,0));
+            }
 
         }
-    }
+
+        if(publish_expected_meas_ && charuco_measure.metric_corners.size() == 15) {
+            expect_pixel_publisher_.publish(expected_msg);
+        }
+
+        }
+
+
 
     void CameraIMUEKF::publish_state() {
         if(publish_full_quaternion){
