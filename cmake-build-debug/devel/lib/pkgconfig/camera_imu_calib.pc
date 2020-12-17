@@ -1,0 +1,8 @@
+prefix=/home/humberto/charuco_ws/src/camera_imu_calib/cmake-build-debug/devel
+
+Name: camera_imu_calib
+Description: Description of camera_imu_calib
+Version: 0.0.0
+Cflags: -I/home/humberto/charuco_ws/src/camera_imu_calib/cmake-build-debug/devel/include
+Libs: -L${prefix}/lib 
+Requires: roscpp rospy charuco_ros sensor_msgs reef_msgs geometry_msgs sensor_msgs tf2_eigen

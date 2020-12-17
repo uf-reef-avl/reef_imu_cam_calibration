@@ -1,7 +1,7 @@
 <launch>
 
     <arg name="record_bag" default="false"/>
-    <arg name="bag_name" default="cam_imu_for_plots_FULL_Nov112020"/>
+    <arg name="bag_name" default="cam_imu_for_plots_FULL_Dic3_2020"/>
     <arg name="play_bag" value="true"/>
     <arg name="run_estimator" value="true"/>
     <arg name="run_truth" value="true"/>
