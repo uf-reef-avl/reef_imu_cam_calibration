@@ -11,5 +11,5 @@ export CMAKE_PREFIX_PATH="/home/humberto/charuco_ws/src/camera_imu_calib/cmake-b
 export LD_LIBRARY_PATH="/home/humberto/charuco_ws/src/camera_imu_calib/cmake-build-debug/devel/lib:$LD_LIBRARY_PATH"
 export PKG_CONFIG_PATH="/home/humberto/charuco_ws/src/camera_imu_calib/cmake-build-debug/devel/lib/pkgconfig:$PKG_CONFIG_PATH"
 export PYTHONPATH="/home/humberto/charuco_ws/src/camera_imu_calib/cmake-build-debug/devel/lib/python2.7/dist-packages:$PYTHONPATH"
-export ROSLISP_PACKAGE_DIRECTORIES="/home/humberto/charuco_ws/src/camera_imu_calib/cmake-build-debug/devel/share/common-lisp:$ROSLISP_PACKAGE_DIRECTORIES"
+export ROSLISP_PACKAGE_DIRECTORIES='/home/humberto/charuco_ws/src/camera_imu_calib/cmake-build-debug/devel/share/common-lisp'
 export ROS_PACKAGE_PATH="/home/moa-nalo/charuco_ws/src/camera_imu_calib:/home/humberto/charuco_ws/src/camera_imu_calib:$ROS_PACKAGE_PATH"

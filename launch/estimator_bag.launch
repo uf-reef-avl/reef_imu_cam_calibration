@@ -1,11 +1,11 @@
 <launch>
 
-    <arg name="record_bag" default="false"/>
-    <arg name="bag_name" default="cam_imu_for_plots_FULL_Dic3_2020"/>
+    <arg name="record_bag" default="true"/>
+    <arg name="bag_name" default="cam_imu_for_plots_UNCALIBRATED"/>
     <arg name="play_bag" value="true"/>
     <arg name="run_estimator" value="true"/>
     <arg name="run_truth" value="true"/>
-    <arg name="display_expected_measurements" default="true"/>
+    <arg name="display_expected_measurements" default="false"/>
     <arg name="run_aruco_corners" default="false"/>
     <arg name="point_grey_camera_used" default="false"/>
     <arg name="lever_arm_name" default="tf_imu"/>
@@ -15,9 +15,10 @@
     <arg name="bag_path" default="/home/humberto/cam_imu_bags_10052020/cam_imu_100520_07.bag"/>
 <!--    <arg name="bag_path" default="/home/humberto/cam_imu_bags_10052020/cam_imu_100520_09.bag"/>-->
     <node pkg="rosbag" type="play" name="player" output="screen" args="--clock --pause -s 7  $(arg bag_path)"/>
+<!--    <node pkg="rosbag" type="play" name="player" output="screen" args="&#45;&#45;clock &#45;&#45;pause  $(arg bag_path)"/>-->
     </group>
 
-    <arg name="result_display" default="true"/>
+    <arg name="result_display" default="false"/>
     <arg name="result_autosize" default="true"/>
     <arg name="result_draw_markers" default="true" />
     <arg name="result_draw_axis" default="true" />

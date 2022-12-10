@@ -1,1 +1,1 @@
-set(ORDERED_PATHS "/home/humberto/charuco_ws/devel/.private/reef_msgs/lib;/opt/ros/melodic/lib")
+set(ORDERED_PATHS "/opt/ros/melodic/lib;/home/humberto/charuco_ws/devel/.private/reef_msgs/lib")

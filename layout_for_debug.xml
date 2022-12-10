@@ -1,0 +1,218 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<root version="2.3.8">
+ <tabbed_widget parent="main_window" name="Main Window">
+  <Tab tab_name="tab5" containers="1">
+   <Container>
+    <DockSplitter orientation="-" sizes="0.332972;0.334056;0.332972" count="3">
+     <DockArea name="...">
+      <plot style="Lines" mode="TimeSeries">
+       <range bottom="-0.555057" left="1917.676961" top="1.543425" right="2017.676680"/>
+       <limitY/>
+       <curve name="/calib_truth/world_to_imu/position/x" color="#000000"/>
+       <curve name="/imu_calib_result/sigma_minus.3" color="#e1000f"/>
+       <curve name="/imu_calib_result/sigma_plus.3" color="#ff0021"/>
+       <curve name="/imu_calib_result/world_to_imu/position/x" color="#000bff"/>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot style="Lines" mode="TimeSeries">
+       <range bottom="0.806045" left="1917.676961" top="1.269728" right="2017.676680"/>
+       <limitY/>
+       <curve name="/calib_truth/world_to_imu/position/y" color="#000000"/>
+       <curve name="/imu_calib_result/world_to_imu/position/y" color="#1800ff"/>
+       <curve name="/imu_calib_result/sigma_minus.4" color="#ff0007"/>
+       <curve name="/imu_calib_result/sigma_plus.4" color="#ff0003"/>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot style="Lines" mode="TimeSeries">
+       <range bottom="1.241616" left="1917.676961" top="2.118676" right="2017.676680"/>
+       <limitY/>
+       <curve name="/calib_truth/world_to_imu/position/z" color="#000000"/>
+       <curve name="/imu_calib_result/world_to_imu/position/z" color="#0e1dff"/>
+       <curve name="/imu_calib_result/sigma_minus.5" color="#ff0027"/>
+       <curve name="/imu_calib_result/sigma_plus.5" color="#ff0001"/>
+      </plot>
+     </DockArea>
+    </DockSplitter>
+   </Container>
+  </Tab>
+  <Tab tab_name="tab9" containers="1">
+   <Container>
+    <DockSplitter orientation="-" sizes="0.332972;0.334056;0.332972" count="3">
+     <DockArea name="...">
+      <plot style="Lines" mode="TimeSeries">
+       <range bottom="-0.071577" left="1942.398779" top="0.072096" right="2042.394598"/>
+       <limitY/>
+       <curve name="/imu_calib_result/imu_to_camera/position/x" color="#d62728"/>
+       <curve name="/imu_calib_result/sigma_plus.15" color="#f14cc1"/>
+       <curve name="/imu_calib_result/sigma_minus.15" color="#bcbd22"/>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot style="Lines" mode="TimeSeries">
+       <range bottom="-0.169036" left="1942.398779" top="-0.094717" right="2042.394598"/>
+       <limitY/>
+       <curve name="/imu_calib_result/imu_to_camera/position/y" color="#1ac938"/>
+       <curve name="/imu_calib_result/sigma_plus.16" color="#9467bd"/>
+       <curve name="/imu_calib_result/sigma_minus.16" color="#1f77b4"/>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot style="Lines" mode="TimeSeries">
+       <range bottom="-0.009608" left="1942.398779" top="0.055606" right="2042.394598"/>
+       <limitY/>
+       <curve name="/imu_calib_result/imu_to_camera/position/z" color="#ff7f0e"/>
+       <curve name="/imu_calib_result/sigma_plus.17" color="#17becf"/>
+       <curve name="/imu_calib_result/sigma_minus.17" color="#d62728"/>
+      </plot>
+     </DockArea>
+    </DockSplitter>
+   </Container>
+  </Tab>
+  <Tab tab_name="tab6" containers="1">
+   <Container>
+    <DockSplitter orientation="-" sizes="0.332972;0.334056;0.332972" count="3">
+     <DockArea name="...">
+      <plot style="Lines" mode="TimeSeries">
+       <range bottom="-0.999499" left="1866.267204" top="1.244145" right="1966.270319"/>
+       <limitY/>
+       <curve name="/calib_truth/velocity/x" color="#ff7f0e"/>
+       <curve name="/imu_calib_result/velocity/x" color="#17becf"/>
+       <curve name="/imu_calib_result/sigma_minus.6" color="#1ac938"/>
+       <curve name="/imu_calib_result/sigma_plus.6" color="#9467bd"/>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot style="Lines" mode="TimeSeries">
+       <range bottom="-0.988471" left="1866.267204" top="0.591558" right="1966.270319"/>
+       <limitY/>
+       <curve name="/calib_truth/velocity/y" color="#f14cc1"/>
+       <curve name="/imu_calib_result/velocity/y" color="#bcbd22"/>
+       <curve name="/imu_calib_result/sigma_minus.7" color="#ff7f0e"/>
+       <curve name="/imu_calib_result/sigma_plus.7" color="#17becf"/>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot style="Lines" mode="TimeSeries">
+       <range bottom="-1.500708" left="1866.267204" top="1.402283" right="1966.270319"/>
+       <limitY/>
+       <curve name="/calib_truth/velocity/z" color="#9467bd"/>
+       <curve name="/imu_calib_result/velocity/z" color="#1f77b4"/>
+       <curve name="/imu_calib_result/sigma_minus.8" color="#f14cc1"/>
+       <curve name="/imu_calib_result/sigma_plus.8" color="#bcbd22"/>
+      </plot>
+     </DockArea>
+    </DockSplitter>
+   </Container>
+  </Tab>
+  <Tab tab_name="tab7" containers="1">
+   <Container>
+    <DockSplitter orientation="-" sizes="0.332972;0.334056;0.332972" count="3">
+     <DockArea name="...">
+      <plot style="Lines" mode="TimeSeries">
+       <range bottom="-0.206379" left="1867.591527" top="0.245496" right="1967.589376"/>
+       <limitY/>
+       <curve name="/imu_calib_result/accel_bias/x" color="#1f77b4"/>
+       <curve name="/imu_calib_result/sigma_minus.12" color="#ff7f0e"/>
+       <curve name="/imu_calib_result/sigma_plus.12" color="#17becf"/>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot style="Lines" mode="TimeSeries">
+       <range bottom="-0.408716" left="1867.591527" top="0.173141" right="1967.589376"/>
+       <limitY/>
+       <curve name="/imu_calib_result/accel_bias/y" color="#d62728"/>
+       <curve name="/imu_calib_result/sigma_minus.13" color="#f14cc1"/>
+       <curve name="/imu_calib_result/sigma_plus.13" color="#bcbd22"/>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot style="Lines" mode="TimeSeries">
+       <range bottom="0.004017" left="1867.591527" top="0.134089" right="1967.589376"/>
+       <limitY/>
+       <curve name="/imu_calib_result/accel_bias/z" color="#1ac938"/>
+       <curve name="/imu_calib_result/sigma_minus.14" color="#9467bd"/>
+       <curve name="/imu_calib_result/sigma_plus.14" color="#1f77b4"/>
+      </plot>
+     </DockArea>
+    </DockSplitter>
+   </Container>
+  </Tab>
+  <Tab tab_name="tab10" containers="1">
+   <Container>
+    <DockSplitter orientation="-" sizes="0.249729;0.250814;0.249729;0.249729" count="4">
+     <DockArea name="...">
+      <plot style="Lines" mode="TimeSeries">
+       <range bottom="0.139118" left="1869.298240" top="0.654897" right="1969.303259"/>
+       <limitY/>
+       <curve name="/imu_calib_result/world_to_imu/orientation/x" color="#1ac938"/>
+       <curve name="/calib_truth/world_to_imu/orientation/x" color="#17becf"/>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot style="Lines" mode="TimeSeries">
+       <range bottom="0.179079" left="1869.298240" top="0.689390" right="1969.303259"/>
+       <limitY/>
+       <curve name="/imu_calib_result/world_to_imu/orientation/y" color="#ff7f0e"/>
+       <curve name="/calib_truth/world_to_imu/orientation/y" color="#bcbd22"/>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot style="Lines" mode="TimeSeries">
+       <range bottom="-0.814026" left="1869.298240" top="-0.316939" right="1969.303259"/>
+       <limitY/>
+       <curve name="/imu_calib_result/world_to_imu/orientation/z" color="#f14cc1"/>
+       <curve name="/calib_truth/world_to_imu/orientation/z" color="#1f77b4"/>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot style="Lines" mode="TimeSeries">
+       <range bottom="0.306041" left="1869.298240" top="0.803160" right="1969.303259"/>
+       <limitY/>
+       <curve name="/imu_calib_result/world_to_imu/orientation/w" color="#9467bd"/>
+       <curve name="/calib_truth/world_to_imu/orientation/w" color="#d62728"/>
+      </plot>
+     </DockArea>
+    </DockSplitter>
+   </Container>
+  </Tab>
+  <currentTabIndex index="0"/>
+ </tabbed_widget>
+ <use_relative_time_offset enabled="1"/>
+ <!-- - - - - - - - - - - - - - - -->
+ <!-- - - - - - - - - - - - - - - -->
+ <Plugins>
+  <plugin ID="DataLoad CSV">
+   <default time_axis=""/>
+  </plugin>
+  <plugin ID="DataLoad ROS bags">
+   <use_header_stamp value="false"/>
+   <use_renaming_rules value="true"/>
+   <discard_large_arrays value="true"/>
+   <max_array_size value="100"/>
+  </plugin>
+  <plugin ID="DataLoad ULog"/>
+  <plugin ID="LSL Subscriber"/>
+  <plugin ID="MQTT Subscriber"/>
+  <plugin ID="ROS Topic Subscriber">
+   <use_header_stamp value="false"/>
+   <use_renaming_rules value="true"/>
+   <discard_large_arrays value="true"/>
+   <max_array_size value="100"/>
+  </plugin>
+  <plugin ID="UDP Server"/>
+  <plugin ID="WebSocket Server"/>
+  <plugin ID="ZMQ Subscriber"/>
+  <plugin ID="ROS /rosout Visualization" status="idle"/>
+  <plugin ID="ROS Topic Re-Publisher" status="idle"/>
+ </Plugins>
+ <!-- - - - - - - - - - - - - - - -->
+ <previouslyLoaded_Datafiles/>
+ <previouslyLoaded_Streamer name="ROS Topic Subscriber"/>
+ <!-- - - - - - - - - - - - - - - -->
+ <customMathEquations/>
+ <snippets/>
+ <!-- - - - - - - - - - - - - - - -->
+</root>
+

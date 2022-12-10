@@ -21,12 +21,12 @@ set(CMAKE_TARGET_DEFINITIONS_CXX
 set(CMAKE_CXX_TARGET_INCLUDE_PATH
   "devel/include"
   "../include"
-  "/home/humberto/charuco_ws/devel/.private/reef_msgs/include"
-  "/home/humberto/charuco_ws/devel/.private/charuco_ros/include"
-  "/home/humberto/charuco_ws/src/reef_msgs/include"
   "/opt/ros/melodic/include"
   "/opt/ros/melodic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp"
+  "/home/humberto/charuco_ws/devel/.private/reef_msgs/include"
+  "/home/humberto/charuco_ws/src/reef_msgs/include"
   "/usr/include/eigen3"
+  "/home/humberto/charuco_ws/devel/.private/charuco_ros/include"
   "/usr/include/opencv"
   )
 

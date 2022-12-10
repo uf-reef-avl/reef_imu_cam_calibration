@@ -29,7 +29,7 @@
 
 #include <camera_imu_calib/IMUCalibration.h>
 
-#define ACC_SAMPLE_SIZE 100
+#define ACC_SAMPLE_SIZE 200
 #define CORNER_SAMPLE_SIZE 20
 
 
@@ -79,7 +79,9 @@ namespace calibration{
         void initializePNP(charuco_ros::CharucoCornerMsg charuco_corners);
         Eigen::Vector3d computePNP(charuco_ros::CharucoCornerMsg charuco_corners);
         void getCamParams(const sensor_msgs::CameraInfo& cam_info);
-        Eigen::MatrixXd  integration_function(Eigen::MatrixXd x, const double t,Eigen::Vector3d w, Eigen::Vector3d s);
+        Eigen::MatrixXd  integration_function(Eigen::MatrixXd x, double t,Eigen::Vector3d w, Eigen::Vector3d s);
+        Eigen::MatrixXd  integration_function_P(Eigen::MatrixXd x, double t,Eigen::Vector3d w, Eigen::Vector3d s);
+        Eigen::Vector3d simpson_integrate( Eigen::Quaterniond q_Ik_to_I, Eigen::Vector3d acceleration);
         void RK45integrate(Eigen::Vector3d w, Eigen::Vector3d s,double step);
         bool chi2AcceptPixels();
         bool acceptCharucoMeasurement();

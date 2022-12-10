@@ -299,9 +299,15 @@ namespace calibration{
 
         if (accInitSampleCount == ACC_SAMPLE_SIZE){
 
+            gravity<<0,0,9.80665;
+
             accSampleAverage.x /= ACC_SAMPLE_SIZE;
             accSampleAverage.y /= ACC_SAMPLE_SIZE;
             accSampleAverage.z /= ACC_SAMPLE_SIZE;
+
+            xHat(BAX, 0) = accSampleAverage.x;
+            xHat(BAY, 0) = accSampleAverage.y;
+            xHat(BAZ, 0) = accSampleAverage.z + gravity(2);
 
             gyroSampleAverage.x /= ACC_SAMPLE_SIZE;
             gyroSampleAverage.y /= ACC_SAMPLE_SIZE;
@@ -314,7 +320,6 @@ namespace calibration{
             xHat(BWY, 0) = gyroSampleAverage.y;
             xHat(BWZ, 0) = gyroSampleAverage.z;
 
-            gravity<<0,0,9.80665;
 
             ROS_WARN_STREAM("XHat post IMU initialization is  \n" <<xHat);
             ROS_WARN_STREAM("Gravity is  \n" <<gravity);
@@ -509,8 +514,8 @@ namespace calibration{
         F.topLeftCorner<3,3>() = -reef_msgs::skew(w_hat);
         F.block<3,3>(0,9) = -I;
         F.block<3,3>(3,6) = I;
-        F.block<3,3>(6,0) = -1 * (q_W_to_I.toRotationMatrix() * reef_msgs::skew(s_hat));
-        F.block<3,3>(6,12)  = -1 * q_W_to_I.toRotationMatrix();
+        F.block<3,3>(6,0) = -1.0 * (q_W_to_I.toRotationMatrix() * reef_msgs::skew(s_hat));
+        F.block<3,3>(6,12)  = -1.0 * q_W_to_I.toRotationMatrix();
 
         G.setZero();
         G.topLeftCorner<3,3>() = -I;
@@ -521,7 +526,7 @@ namespace calibration{
 
 //=========================Euler integration
         //Propagate velocity of IMU wrt world
-//        xHat.block<3,1>(U,0) = xHat.block<3,1>(U,0) + (q_W_to_I.toRotationMatrix() * s_hat + gravity)*dt;
+//        xHat.block<3,1>(U,0) = xHat.block<3,1>(U,0) + (q_W_to_I.toRotationMatrix() * s_hat + gravity_in_board)*dt;
 //        //Propagate position of IMU wrt world
 //        xHat.block<3,1>(PX,0) =  xHat.block<3,1>(PX,0) + velocity_W * dt;
 //        //Propagate the rest of the states
@@ -561,36 +566,76 @@ namespace calibration{
         Eigen::MatrixXd ic = Eigen::MatrixXd::Zero(23,1);
         ic.block<4,1>(QX,0) << 0,0,0,1.;
         Eigen::Quaterniond q_Ik_I;
+        Eigen::Quaterniond q_W_to_I;
         Eigen::MatrixXd k1,k2,k3,k4;
         for (int i = 1; i <=steps ; i++) {
+            //Integrate dynamics
             k1 = integration_function(ic, 0.0, w_hat, s_hat);
             k2 = integration_function(ic + 0.5*k1*h, h/2, w_hat, s_hat);
             k3 = integration_function(ic + 0.5*k2*h, h/2, w_hat, s_hat);
             k4 = integration_function(ic + k3*h, h, w_hat, s_hat);
+            //Integration
             ic = ic + (k1 + 2*k2 + 2*k3 + k4)*(1./6)*h;
             //Normalize quaternion part
             q_Ik_I = Eigen::Quaterniond (ic.block<4,1>(QX,0));
             q_Ik_I.normalize();
             ic.block<4,1>(QX,0) = q_Ik_I.coeffs();
+            //Integrate Covariance matrix
+
+//            k1 = integration_function_P(P, 0.0, w_hat, s_hat);
+//            k2 = integration_function_P(P + 0.5*k1*h, h/2, w_hat, s_hat);
+//            k3 = integration_function_P(P + 0.5*k2*h, h/2, w_hat, s_hat);
+//            k4 = integration_function_P(P + k3*h, h, w_hat, s_hat);
+//            //Integration
+//            P = P + (k1 + 2*k2 + 2*k3 + k4)*(1./6)*h;
+
         }
+        //ALTERNATIVE INTEGRATION FOR position and velocity.
+        Eigen::Vector3d ss;
+        Eigen::Vector3d yy;
+
+        ss = simpson_integrate(q_Ik_I, s_hat);
+        yy = (dt/6.0)*( (4/2.0)*ss + ss); //With ss at t_initial = 0
+
+
         //Re-Construct original states
         gravity_in_board = reef_msgs::quaternion_to_rotation(initial_board_q)*gravity;
-        Eigen::Quaterniond q_W_to_I;
         Eigen::Vector3d world_to_imu_position(xHat(PX), xHat(PY), xHat(PZ));
         Eigen::Vector3d velocity_W(xHat(U), xHat(V), xHat(W));
         Eigen::Vector3d gyro_bias(xHat(BWX), xHat(BWY) , xHat(BWZ));
         Eigen::Vector3d accel_bias(xHat(BAX), xHat(BAY) , xHat(BAZ));
         Eigen::Vector3d position_camera_in_imu_frame(xHat(P_IX), xHat(P_IY), xHat(P_IZ));
-        //Attitude
+//        //Attitude
         q_W_to_I = xHat.block<4,1>(QX,0);
         xHat.block<4,1>(QX,0) = reef_msgs::quatMult(q_Ik_I,q_W_to_I).coeffs(); //This recovers the full current attitude after propagation.
-        //Position
-        xHat.block<3,1>(PX,0) = world_to_imu_position + velocity_W*dt + 0.5*gravity_in_board*dt*dt + q_W_to_I.toRotationMatrix()*ic.block<3,1>(PX,0);
         //Velocity
-        xHat.block<3,1>(U,0) = velocity_W + gravity_in_board*dt + q_W_to_I.toRotationMatrix()*ic.block<3,1>(U,0);
+//        xHat.block<3,1>(U,0) = velocity_W  + q_W_to_I.toRotationMatrix()*ic.block<3,1>(U,0) + gravity_in_board*dt;
+        xHat.block<3,1>(U,0) = velocity_W  + q_W_to_I.toRotationMatrix()*ss + gravity_in_board*dt;
+        //Position
+//        xHat.block<3,1>(PX,0) = world_to_imu_position + velocity_W*dt + 0.5*gravity_in_board*dt*dt + q_W_to_I.toRotationMatrix()*ic.block<3,1>(PX,0);
+        xHat.block<3,1>(PX,0) = world_to_imu_position + velocity_W*dt + q_W_to_I.toRotationMatrix()*yy + 0.5*gravity_in_board*dt*dt;
     }
 
-    Eigen::MatrixXd CameraIMUEKF::integration_function( Eigen::MatrixXd x, const double t, Eigen::Vector3d omega,Eigen::Vector3d acceleration)
+    Eigen::Vector3d CameraIMUEKF::simpson_integrate( Eigen::Quaterniond q_t1, Eigen::Vector3d acceleration)
+    {
+        //Interpolate w and s here
+        Eigen::Vector3d s0;
+        Eigen::Vector3d s1;
+        Eigen::Vector3d s2;
+        s0 = s_k0 + (acceleration - s_k0)*(0) - xHat.block<3,1>(BAX,0);
+        s1 = s_k0 + (acceleration - s_k0)*(0.5) - xHat.block<3,1>(BAX,0);
+        s2 = s_k0 + (acceleration - s_k0)*(1.0) - xHat.block<3,1>(BAX,0);
+        Eigen::Quaterniond q_t0_halfdt;
+
+        q_t0_halfdt.coeffs() << 0.5*q_t1.x(), 0.5*q_t1.y(), 0.5*q_t1.z(), 1.0;
+        Eigen::Vector3d integral;
+        integral = (dt/6.0)*( ( s0 )  + 4* q_t0_halfdt.toRotationMatrix().transpose() * (s1) + q_t1.toRotationMatrix().transpose()*(s2));
+        return integral;
+
+    }
+
+
+    Eigen::MatrixXd CameraIMUEKF::integration_function( Eigen::MatrixXd x, double t, Eigen::Vector3d omega,Eigen::Vector3d acceleration)
     {
         //Interpolate w and s here
         Eigen::Vector3d w;
@@ -602,6 +647,7 @@ namespace calibration{
         Eigen::Quaterniond q_Ik_to_I;
         q_Ik_to_I.vec() << x(QX), x(QY), x(QZ);
         q_Ik_to_I.w() = x(QW);
+        q_Ik_to_I.normalize();
 
 
         Eigen::Vector3d world_to_imu_position(x(PX), x(PY), x(PZ));
@@ -615,18 +661,55 @@ namespace calibration{
         imu_to_camera_quat.w() = x(Q_IW);
         Eigen::Matrix4d Omega_matrix;
         Omega_matrix.setZero();
-        Omega_matrix.topLeftCorner<3,3>() = -1*(reef_msgs::skew(w));
+        Omega_matrix.topLeftCorner<3,3>() = -1.0*(reef_msgs::skew(w));
         Omega_matrix.block<3,1>(0,3) = w;
         Omega_matrix.block<1,3>(3,0) = -w.transpose();
 
         Eigen::MatrixXd dxdt = Eigen::MatrixXd::Zero(23,1);
         Eigen::Quaterniond q_Ik_to_I_dot;
         q_Ik_to_I_dot.coeffs() = 0.5 * Omega_matrix * q_Ik_to_I.coeffs();
+//        High-precision, consistent EKF-based visual-inertial odometry.The International Journal of Robotics Research
         dxdt.block<4,1>(QX,0) = q_Ik_to_I_dot.coeffs();//Attitude_dot
+//        dxdt.block<3,1>(U,0) =  s;//ve_dot
         dxdt.block<3,1>(U,0) = q_Ik_to_I.toRotationMatrix() * s;//ve_dot
         dxdt.block<3,1>(PX,0) =  x.block<3,1>(U,0);//Rho_dot
         return dxdt;
     }
+
+
+    Eigen::MatrixXd CameraIMUEKF::integration_function_P( Eigen::MatrixXd Pic, double t, Eigen::Vector3d omega,Eigen::Vector3d acceleration)
+    {
+        //Interpolate w and s here
+        Eigen::Vector3d w;
+        Eigen::Vector3d s;
+        w = w_k0 + (omega - w_k0)*(t/dt) - xHat.block<3,1>(BWX,0);
+        s = s_k0 + (acceleration - s_k0)*(t/dt) - xHat.block<3,1>(BAX,0);
+
+        Eigen::Quaterniond q_W_to_I;
+        q_W_to_I.vec() << xHat(QX), xHat(QY), xHat(QZ);
+        q_W_to_I.w() = xHat(QW);
+        q_W_to_I.normalize();
+
+        F.setZero();
+        F.topLeftCorner<3,3>() = -reef_msgs::skew(w);
+        F.block<3,3>(0,9) = -I;
+        F.block<3,3>(3,6) = I;
+        F.block<3,3>(6,0) = -1.0 * (q_W_to_I.toRotationMatrix() * reef_msgs::skew(s));
+        F.block<3,3>(6,12)  = -1.0 * q_W_to_I.toRotationMatrix();
+
+        G.setZero();
+        G.topLeftCorner<3,3>() = -I;
+        G.block<3,3>(6,3) = -1 * (q_W_to_I.toRotationMatrix());
+        G.block<3,3>(9,6) = I;
+        G.block<3,3>(12,9) = I;
+
+        Eigen::MatrixXd Pdot;
+        Pdot = F * Pic + Pic * F.transpose() + G * Q * G.transpose();
+
+        return Pdot;
+    }
+
+
 
     void CameraIMUEKF::nonLinearUpdate() {
 
@@ -662,7 +745,7 @@ namespace calibration{
         //Let's save the correction for the quaternion attitude.
         q_attitude_error = correction.block<3,1>(0,0);
         quat_error.vec() = 0.5 * correction.block<3,1>(0,0);
-        quat_error.w() = 1;
+        quat_error.w() = 1.0;
         world_to_imu_quat = reef_msgs::quatMult(quat_error , world_to_imu_quat) ;
         world_to_imu_quat.normalize();
         xHat.block<4,1>(QX,0) =  world_to_imu_quat.coeffs();
@@ -670,7 +753,7 @@ namespace calibration{
         //Here we also save the quaterinion error. Now for the offset orientation.
         q_offset_error = correction.block<3,1>(18,0);
         quat_error.vec() = 0.5 * correction.block<3,1>(18,0);
-        quat_error.w() = 1;
+        quat_error.w() = 1.0;
         imu_to_camera_quat =  reef_msgs::quatMult(quat_error , imu_to_camera_quat );
         imu_to_camera_quat.normalize();
         xHat.block<4,1>(Q_IX,0) =  imu_to_camera_quat.coeffs();
@@ -684,6 +767,11 @@ namespace calibration{
             P_prior = P; //store the prior for partial update
             P = ( Eigen::MatrixXd::Identity(21,21) - K * H ) * P;
             P = (gammas * (P_prior - P) * gammas) + P;
+            if(P.diagonal().array().sqrt().hasNaN()){
+                ROS_ERROR("Nan detected");
+                            }
+
+
         } else
             P = ( Eigen::MatrixXd::Identity(21,21) - K * H ) * P;
 
@@ -852,8 +940,8 @@ namespace calibration{
         angle_difference = rpy_measurement - previous_charuco_roll;
         previous_charuco_roll =  rpy_measurement;
         if (abs(angle_difference(0))>=pixel_difference_threshold || angle_difference(1)>pixel_difference_threshold || angle_difference(2)>pixel_difference_threshold || rpy_measurement.norm()==0){
-            ROS_INFO("Charuco Attitude jump     ");
-            std::cout<<angle_difference;
+//            ROS_INFO("Charuco Attitude jump     ");
+//            std::cout<<angle_difference;
             return false;
         }
         else{

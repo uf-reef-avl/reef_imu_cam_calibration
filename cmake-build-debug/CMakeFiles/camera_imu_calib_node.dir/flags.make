@@ -6,5 +6,5 @@ CXX_FLAGS = -g
 
 CXX_DEFINES = -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\"camera_imu_calib\"
 
-CXX_INCLUDES = -I/home/humberto/charuco_ws/src/camera_imu_calib/cmake-build-debug/devel/include -I/home/humberto/charuco_ws/src/camera_imu_calib/include -I/home/humberto/charuco_ws/devel/.private/reef_msgs/include -I/home/humberto/charuco_ws/devel/.private/charuco_ros/include -I/home/humberto/charuco_ws/src/reef_msgs/include -I/opt/ros/melodic/include -I/opt/ros/melodic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/usr/include/eigen3 -I/usr/include/opencv 
+CXX_INCLUDES = -I/home/humberto/charuco_ws/src/camera_imu_calib/cmake-build-debug/devel/include -I/home/humberto/charuco_ws/src/camera_imu_calib/include -I/opt/ros/melodic/include -I/opt/ros/melodic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/home/humberto/charuco_ws/devel/.private/reef_msgs/include -I/home/humberto/charuco_ws/src/reef_msgs/include -I/usr/include/eigen3 -I/home/humberto/charuco_ws/devel/.private/charuco_ros/include -I/usr/include/opencv 
 

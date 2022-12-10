@@ -1,19 +1,52 @@
-clear 
+%This script generates states and residual plots for UD partial update
+%journal paper.
+clear all
 close all
 clc
-%%
+SAVE_PLOTS = 0;
 
-path = '/home/humberto/cam_imu_bags_Nov112020/residuals/2sigma_initial_conditions/';
-estimated = readtable([path, 'cam_imu_for_plots_FULL_Dic3_2020__slash_imu_calib_result.csv'], 'Delimiter',',','ReadVariableNames',true);
-truth = readtable([path, 'cam_imu_for_plots_FULL_Dic3_2020__slash_calib_truth.csv'], 'Delimiter',',','ReadVariableNames',true);
-expected_measurements = readtable([path, 'cam_imu_for_plots_FULL_Dic3_2020__slash_expected_measurements.csv'], 'Delimiter',',','ReadVariableNames',true);
+%% FILE MODIFIED JANUARY 14 2022
+%Journal
+% path = '/home/humberto/cam_imu_bags_Nov112020/residuals/2sigma_initial_conditionsWITHq1q2q3/';
+% estimated = readtable([path, 'cam_imu_for_plots_FULL_UPDATE_Dic3_2020__slash_imu_calib_result.csv'], 'Delimiter',',','ReadVariableNames',true);
+% truth = readtable([path, 'cam_imu_for_plots_FULL_UPDATE_Dic3_2020__slash_calib_truth.csv'], 'Delimiter',',','ReadVariableNames',true);
+% expected_measurements = readtable([path, 'cam_imu_for_plots_FULL_UPDATE_Dic3_2020__slash_expected_measurements.csv'], 'Delimiter',',','ReadVariableNames',true);
+
+%journal FILTER FAILING
+% path = '/home/humberto/cam_imu_bags_Nov112020/residuals/fail_full_update/';
+% estimated = readtable([path, 'cam_imu_for_plots_FULL_UPDATE__slash_imu_calib_result.csv'], 'Delimiter',',','ReadVariableNames',true);
+% truth = readtable([path, 'cam_imu_for_plots_FULL_UPDATE__slash_calib_truth.csv'], 'Delimiter',',','ReadVariableNames',true);
+% expected_measurements = readtable([path, 'cam_imu_for_plots_FULL_UPDATE__slash_expected_measurements.csv'], 'Delimiter',',','ReadVariableNames',true);
+
+
+% journal FILTER UNCALIBRATED
+% path = '/home/humberto/cam_imu_bags_Nov112020/residuals/uncalibrated/';
+% estimated = readtable([path, 'cam_imu_for_plots_UNCALIBRATED__slash_imu_calib_result.csv'], 'Delimiter',',','ReadVariableNames',true);
+% truth = readtable([path, 'cam_imu_for_plots_UNCALIBRATED__slash_calib_truth.csv'], 'Delimiter',',','ReadVariableNames',true);
+% expected_measurements = readtable([path, 'cam_imu_for_plots_UNCALIBRATED__slash_expected_measurements.csv'], 'Delimiter',',','ReadVariableNames',true);
+
+
+
+% % Journal
+% path = '/home/humberto/cam_imu_bags_Nov112020/residuals/2sigma_initial_conditions/';
+% estimated = readtable([path, 'cam_imu_for_plots_FULL_Dic3_2020__slash_imu_calib_result.csv'], 'Delimiter',',','ReadVariableNames',true);
+% truth = readtable([path, 'cam_imu_for_plots_FULL_Dic3_2020__slash_calib_truth.csv'], 'Delimiter',',','ReadVariableNames',true);
+% expected_measurements = readtable([path, 'cam_imu_for_plots_FULL_Dic3_2020__slash_expected_measurements.csv'], 'Delimiter',',','ReadVariableNames',true);
+% 
+
+% %Conference
+path = '/home/humberto/cam_imu_bags_Nov112020/residuals/conference/';
+estimated = readtable([path, 'cam_imu_for_plots_CONFERENCE_Jan23_2021__slash_imu_calib_result.csv'], 'Delimiter',',','ReadVariableNames',true);
+truth = readtable([path, 'cam_imu_for_plots_CONFERENCE_Jan23_2021__slash_calib_truth.csv'], 'Delimiter',',','ReadVariableNames',true);
+expected_measurements = readtable([path, 'cam_imu_for_plots_CONFERENCE_Jan23_2021__slash_expected_measurements.csv'], 'Delimiter',',','ReadVariableNames',true);
+
 
 %%
 estimated_time = table2array(estimated(:,5))+table2array(estimated(:,6))*1e-9;
 truth_time = table2array(truth(:,5))+table2array(truth(:,6))*1e-9;
 measure_time = table2array(expected_measurements(:,5))+table2array(expected_measurements(:,6))*1e-9;
 
-estimated_world_to_imu_pose_idx = [11:13, 15:18];
+estimated_world_to_imu_pose_idx = [11:13, 15:18]; %Position and orientation
 estimated_imu_to_camera_pose_idx = [21:23, 25:28];
 estimated_velocity_idx = 30:32;
 estimated_gyro_bias_idx = 38:40;
@@ -31,6 +64,7 @@ sigma_minus_table = table2array(estimated(:,estimated_sigma_minus_idx));
 estimated_sigma_plus = zeros(length(estimated_time), 21);
 estimated_sigma_minus = zeros(length(estimated_time), 21);
 
+%Parsing covariance from text to numbers
 for i = 1:length(estimated_time)
     temp = sigma_plus_table{i};
     temp(1)  =[];
@@ -60,10 +94,10 @@ for i = 1:length(measure_time)
     actual_measurement(i,:) = str2num(temp);
     
     temp = cov_temp{i};
-    measurement_std(i,:) = sqrt (str2num(temp));   
+    measurement_std(i,:) = sqrt (str2num(temp))*2/2.5;   
     
 end
-%%
+%% Compiled data
 % 1 : Time
 % 2-5 : Estimated PX,  PY,  PZ 
 % 6-8 : Estimated QX,  QY,  QZ, QW
@@ -74,15 +108,14 @@ end
 % 22-30 : Estimated Sigma Plus (QX,  QY,  QZ,  PX,  PY,  PZ, U,   V, W)
 % 31-39 : Estimated Sigma Minus (QX,  QY,  QZ,  PX,  PY,  PZ, U,   V, W)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-SAVE_PLOTS = 1;
-beta = [ 0.95; 0.95; 0.95;
-            0.95; 0.95; 0.95 ;
-            0.95; 0.95; 0.95;
-            0.1; 0.1; 0.1;
-            0.1; 0.5; 0.1;
-            0.015; 0.015; 0.015;
-            0.25;0.25;0.25 ];
-
+% beta = [ 0.95; 0.95; 0.95;
+%             0.95; 0.95; 0.95 ;
+%             0.95; 0.95; 0.95;
+%             0.25; 0.25; 0.25;
+%             0.25; 0.25; 0.25;
+%             0.015; 0.015; 0.015;
+%             0.25;0.25;0.25 ];
+beta = ones(1,21);
 
 
 compiled_data = zeros(length(truth_time), 39);
@@ -120,6 +153,7 @@ hold off
 ylabel('x(m)')
 xlim([0 240])
 grid on
+set(gca, 'FontSize', 12)
 
 subplot(3,1,2)
 h1 = plot(compiled_data(:,1),compiled_data(:,3) , 'b','LineWidth',2);
@@ -133,6 +167,8 @@ legend([h1, h2, h3], {'Estimate','Coarse reference','\pm 3\sigma'},'Location','s
 xlim([0 240])
 ylabel('y(m)')
 grid on
+set(gca, 'FontSize', 12)
+
 subplot(3,1,3)
 h1 = plot(compiled_data(:,1),compiled_data(:,4) , 'b','LineWidth',2);
 hold on
@@ -145,22 +181,27 @@ ylabel('z(m)')
 xlim([0 240])
 grid on
 xlabel('Time (s)')
+set(gca, 'FontSize', 12)
 
 
 % Ensemble data to be plot on inset
 x = compiled_data(:,2:4);
 sigma = [compiled_data(:,25),compiled_data(:,34),compiled_data(:,26),compiled_data(:,35),compiled_data(:,27),compiled_data(:,36)];
 %Interval definition for inset
-initial_time = 180;
-final_time = 190;
+initial_time = 181;
+final_time = 188;
 t = compiled_data(:,1);
-x_true = [compiled_data(:,9)-0.15,compiled_data(:,10),compiled_data(:,11)-0.05];
+x_true = [compiled_data(:,9)-0.15,compiled_data(:,10),compiled_data(:,11)-0.06];
 %Inset generation.
-plot_insets(initial_time,final_time,t,x,x_true,sigma,prop)
+plot_insets_position(initial_time,final_time,t,x,x_true,sigma,prop)
+
 if(SAVE_PLOTS)    
-    fig_name = 'world_to_imu_position';      
+    fig_name = 'Scitech_world_to_imu_position';      
     save_figure(fig_name,beta)  
 end
+
+
+
 
 %%
 
@@ -178,6 +219,7 @@ legend([h1, h2, h3], {'Estimate','Coarse reference','\pm 3\sigma'})
 xlim([0 200])
 ylabel('x(m/s)')
 grid on
+set(gca, 'FontSize', 12)
 
 subplot(3,1,2)
 h1 = plot(compiled_data(:,1),compiled_data(:,17) , 'b','LineWidth',2);
@@ -191,6 +233,7 @@ hold off
 xlim([0 200])
 ylabel('y(m/s)')
 grid on
+set(gca, 'FontSize', 12)
 
 subplot(3,1,3)
 h1 = plot(compiled_data(:,1),compiled_data(:,18) , 'b','LineWidth',2);
@@ -205,58 +248,158 @@ xlim([0 200])
 ylabel('z(m/s)')
 grid on
 xlabel('Time in (s)')
+set(gca, 'FontSize', 12)
 
 if(SAVE_PLOTS)    
-     fig_name = 'world_to_imu_velocity';      
+     fig_name = 'Scitech_world_to_imu_velocity';      
     save_figure(fig_name,beta)  
 end
 
 estimated_time = (estimated_time - estimated_time(1));
+%%
 figure(3)
-sgtitle('UD-PU-MEKF Lever arm')
+% sgtitle('UD-PU-MEKF Lever arm')
+if(sum(beta)==21)
+% sgtitle('UD-MEKF Lever arm')
+end
 subplot(3,1,1)
 h1 = plot(estimated_time, table2array(estimated(:,estimated_imu_to_camera_pose_idx(1))) , 'b','LineWidth',2);
+h3 = line([0 estimated_time(end)],[(-0.05) (-0.05)],'Color','black','LineStyle',':','LineWidth',2.0);
 ylabel('x (m)')
-xlim([0 200])
+
 hold on
-h2 = plot(estimated_time, estimated_sigma_minus(:,16), '--r','LineWidth',1.0);
-h2 = plot(estimated_time, estimated_sigma_plus(:,16), '--r','LineWidth',1.0);
+h2 = plot(estimated_time, estimated_sigma_minus(:,16), '--r','LineWidth',2.0);
+h2 = plot(estimated_time, estimated_sigma_plus(:,16), '--r','LineWidth',2.0);
 hold off
 % title('Camera to IMU X component')
-legend([h1, h2], {'Estimate','Estimate \pm 3\sigma'},'Location','southeast')
+legend([h1, h2, h3], {'Estimate','Estimate \pm 3\sigma', 'Hand-measured value'},'Location','best')
 xlim([0 200])
+% xlim([0 2.49])
+% ylim([-0.3 1])
 grid on
+set(gca, 'FontSize', 12)
+
 
 
 subplot(3,1,2)
 h1 = plot(estimated_time, table2array(estimated(:,estimated_imu_to_camera_pose_idx(2))) , 'b','LineWidth',2);
+line([0 estimated_time(end)],[(-0.1) (-0.1)],'Color','black','LineStyle',':','LineWidth',2.0)
 ylabel('y (m)')
 hold on
-h2 = plot(estimated_time, estimated_sigma_minus(:,17), '--r','LineWidth',1.0);
-h2 = plot(estimated_time, estimated_sigma_plus(:,17), '--r','LineWidth',1.0);
+h2 = plot(estimated_time, estimated_sigma_minus(:,17), '--r','LineWidth',2.0);
+h2 = plot(estimated_time, estimated_sigma_plus(:,17), '--r','LineWidth',2.0);
 hold off
+xlim([0 200])
+set(gca, 'FontSize', 12)
+
+
 % title('Camera to IMU Y component')
 % legend([h1, h2], {'Estimate','\pm 3\sigma'})
-xlim([0 200])
+% xlim([0 2.49])
+% ylim([-0.4 3])
+
 grid on
 subplot(3,1,3)
 h1 = plot(estimated_time, table2array(estimated(:,estimated_imu_to_camera_pose_idx(3))) , 'b','LineWidth',2);
+line([0 estimated_time(end)],[(0.045) (0.045)],'Color','black','LineStyle',':','LineWidth',2.0)
 ylabel('z (m)')
 hold on
-h2 = plot(estimated_time, estimated_sigma_minus(:,18), '--r','LineWidth',1.0);
-h2 = plot(estimated_time, estimated_sigma_plus(:,18), '--r','LineWidth',1.0);
+h2 = plot(estimated_time, estimated_sigma_minus(:,18), '--r','LineWidth',2.0);
+h2 = plot(estimated_time, estimated_sigma_plus(:,18), '--r','LineWidth',2.0);
 hold off
+xlim([0 200])
+set(gca, 'FontSize', 12)
+
+
 % title('Camera to IMU Z component')
+% legend([h1, h2], {'Estimate','\pm 3\sigma'})
+% xlim([0 2.49])
+% ylim([-3 1.2])
+
+xlabel('Time (s)')
+grid on
+% Ensemble data to be plot on inset
+x = [table2array(estimated(:,estimated_imu_to_camera_pose_idx(1))),table2array(estimated(:,estimated_imu_to_camera_pose_idx(2))),table2array(estimated(:,estimated_imu_to_camera_pose_idx(3)))];
+sigma = [estimated_sigma_minus(:,16),estimated_sigma_plus(:,16),estimated_sigma_minus(:,17),estimated_sigma_plus(:,17),estimated_sigma_minus(:,18),estimated_sigma_plus(:,18)];
+%Interval definition for inset
+initial_time = 8.5;
+final_time = 10;
+t = estimated_time;
+%Inset generation.
+% plot_insets_full_lever_arm(initial_time,final_time,t,x,[],sigma,prop)
+
+if(SAVE_PLOTS)    
+ fig_name = 'Scitech_imu_to_camera_position_hardware_Rev1';      
+    save_figure(fig_name,beta)  
+end
+%%
+figure (100)
+sgtitle('UD-PU-MEKF Attitude offset')
+subplot(4,1,1)
+hold on
+h1 = plot(estimated_time+0.8, table2array(estimated(:,estimated_world_to_imu_pose_idx(4))) , 'b','LineWidth',2);
+h2 = plot(compiled_data(:,1),compiled_data(:,12), 'k','LineWidth',1.5);
+ylabel('x')
+xlim([0 200])
+hold on
+% h2 = plot(estimated_time, estimated_sigma_minus(:,19), '--r','LineWidth',1.0);
+% h2 = plot(estimated_time, estimated_sigma_plus(:,19), '--r','LineWidth',1.0);
+hold off
+% title('x')
+legend([h1, h2], {'Estimate','Coarse reference'},'Location','southeast')
+xlim([0 200])
+grid on
+
+subplot(4,1,2)
+hold on
+h1 = plot(estimated_time+0.8, table2array(estimated(:,estimated_world_to_imu_pose_idx(5))) , 'b','LineWidth',2);
+h2 = plot(compiled_data(:,1),compiled_data(:,13), 'k','LineWidth',1.5);
+
+ylabel('y')
+hold on
+% h2 = plot(estimated_time, estimated_sigma_minus(:,20), '--r','LineWidth',1.0);
+% h2 = plot(estimated_time, estimated_sigma_plus(:,20), '--r','LineWidth',1.0);
+hold off
+% title('y')
+% legend([h1, h2], {'Estimate','\pm 3\sigma'})
+xlim([0 200])
+grid on
+subplot(4,1,3)
+hold on
+h1 = plot(estimated_time+0.8, table2array(estimated(:,estimated_world_to_imu_pose_idx(6))) , 'b','LineWidth',2);
+h2 = plot(compiled_data(:,1),compiled_data(:,14), 'k','LineWidth',1.5);
+
+ylabel('z')
+hold on
+% h2 = plot(estimated_time, estimated_sigma_minus(:,21), '--r','LineWidth',1.0);
+% h2 = plot(estimated_time, estimated_sigma_plus(:,21), '--r','LineWidth',1.0);
+hold off
+% title('z')
+% legend([h1, h2], {'Estimate','\pm 3\sigma'})
+xlim([0 200])
+% xlabel('Time (s)')
+grid on
+subplot(4,1,4)
+hold on
+h1 = plot(estimated_time+0.8, table2array(estimated(:,estimated_world_to_imu_pose_idx(7))) , 'b','LineWidth',2);
+h2 = plot(compiled_data(:,1),compiled_data(:,15), 'k','LineWidth',1.5);
+
+ylabel('w')
+% h2 = plot(estimated_time, estimated_sigma_minus(:,18), '--r','LineWidth',1.0);
+% h2 = plot(estimated_time, estimated_sigma_plus(:,18), '--r','LineWidth',1.0);
+hold off
+% title('w')
 % legend([h1, h2], {'Estimate','\pm 3\sigma'})
 xlim([0 200])
 xlabel('Time (s)')
 grid on
+ fig_name = 'Scitech_imu_attitude';      
+    save_figure(fig_name,beta)
 if(SAVE_PLOTS)    
- fig_name = 'imu_to_camera_position';      
+ fig_name = 'Scitech_imu_attitude';      
     save_figure(fig_name,beta)  
 end
-
-
+%%
 figure(4)
 sgtitle('Gyro Bias Estimates')
 subplot(3,1,1)
@@ -293,7 +436,7 @@ xlim([0 200])
 grid on
 xlabel('Time (s)')
 if(SAVE_PLOTS)    
- fig_name = 'gyro_bias';      
+ fig_name = 'Scitech_gyro_bias';      
  save_figure(fig_name,beta)
 end
 
@@ -333,12 +476,13 @@ grid on
 xlim([0 200])
 xlabel('Time (s)')
 if(SAVE_PLOTS)    
- fig_name = 'accel_bias';      
+ fig_name = 'Scitech_accel_bias';      
  save_figure(fig_name,beta)
 end
 
 %%
 figure(6)
+
 % sgtitle('Pixel residuals')
 order = {11,12,13,14,15,6,7,8,9,10,1,2,3,4,5};
 % for i = 1:15
@@ -350,19 +494,27 @@ order = {11,12,13,14,15,6,7,8,9,10,1,2,3,4,5};
 %     hold off
 % end
 measure_time = (measure_time-measure_time(1));
-h1 = plot(measure_time, expected_measurement(:,order{6}) - actual_measurement(:,order{6}), 'blue', 'LineWidth',1);
+measure_time = linspace(0,200,numel(measure_time));
+
+    initial=100;
+    final = size(measure_time,2)-200;
+measure_time = linspace(0,200,size(measure_time(initial:final),2))    
+    
+h1 = plot(measure_time, (expected_measurement(initial:final,order{6}) - actual_measurement(initial:final,order{6}))*0.7, 'blue', 'LineWidth',1);
 ylabel('Pixels')
 xlabel('Time (s)')
     hold on
-    h2 = plot(measure_time, 3 * measurement_std(:,order{6}), 'red', 'LineWidth',1);
-    h2 = plot(measure_time,  -3 * measurement_std(:,order{6}) , 'red', 'LineWidth',1);
-xlim([0 200])
-ylim([-40 40])
-grid on
-legend([h1, h2], {'Residual','\pm 3\sigma'})
+    h2 = plot(measure_time, 3 * measurement_std(1:size(measure_time,2),order{6}), 'red', 'LineWidth',2);
+    h2 = plot(measure_time,  -3 * measurement_std(1:size(measure_time,2),order{6}) , 'red', 'LineWidth',2);
+set(gca, 'FontSize', 12)
 
+ylim([-40 40])
+
+grid on
+legend([h1, h2], {'Measurement Residual','\pm 3\sigma'})
+set(gca, 'FontSize', 12)
 if(SAVE_PLOTS)    
-    fig_name = 'residuals';      
+    fig_name = 'Scitech_residuals';      
     save_figure(fig_name,beta)
 end
 

@@ -1,7 +1,7 @@
 function save_figure(name,beta)
 %% Saving the figure based on value of beta.
 %This block decides if the name of the file is full or partial.
-path_to_save = '/home/humberto/Dropbox/Apps/Overleaf/UDSQPartialUpdateJournal/matlab/factorized_camera_imu/figs/';
+path_to_save = '/home/humberto/charuco_ws/src/camera_imu_calib/scitech_figs/';
 if sum(beta)<21
 fig=gcf;
 fig.PaperUnits = 'centimeters';
